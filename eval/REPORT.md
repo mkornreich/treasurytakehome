@@ -49,8 +49,8 @@ Timing is worst-case: the process is pinned to **one CPU with one OCR worker**.
 
 | Time per label, one CPU | Before | After |
 |---|---|---|
-| Median | 2.6 s | 2.8 s |
-| Worst | 3.4 s | 3.2 s |
+| Median | 2.6 s | 3.1 s |
+| Worst | 3.4 s | 3.8 s |
 
 (The baseline run had 165 checks rather than 171, because the capitals and bold rows only appear once the
 warning has been found.)

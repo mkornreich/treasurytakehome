@@ -58,6 +58,7 @@ class ImageReader:
         self.gray = gray
         self.view = View.of(gray).fit_for_ocr()
         self.plan: list = list(PLAN)
+        self.urgent: list[str] = []  # passes on a straightened view: they run before anything else
         self.evidences: list[Evidence] = []
         self.rotated = self.deskewed = False
         self.full_pass_s = 0.0
@@ -65,16 +66,17 @@ class ImageReader:
 
     @property
     def has_more(self) -> bool:
-        return bool(self.plan)
+        return bool(self.urgent or self.plan)
 
     @property
     def next_cost(self) -> float:
         """Rough time the next step will take (a warning re-read covers a small crop)."""
-        return self.full_pass_s * (0.35 if self.plan and isinstance(self.plan[0], View) else 1.0)
+        step = (self.urgent or self.plan or [None])[0]
+        return self.full_pass_s * (0.35 if isinstance(step, View) else 1.0)
 
     def run_next(self) -> None:
         start = perf_counter()
-        step = self.plan.pop(0)
+        step = self.urgent.pop(0) if self.urgent else self.plan.pop(0)
         if isinstance(step, View):  # a cropped warning paragraph
             evidence, _ = read_text(step, "ocr:warning", self.index, config=BLOCK_CONFIG)
             self.evidences.append(evidence)
@@ -91,9 +93,9 @@ class ImageReader:
             view = color.map(enhance if step == "enhanced" else binarize)
         evidence, skew = read_text(view, f"ocr:{step}", self.index, **({"config": config} if config else {}))
         self.evidences.append(evidence)
+        self.full_pass_s = max(self.full_pass_s, perf_counter() - start)
         if step == "standard":
             self._straighten(evidence, skew)
-        self.full_pass_s = max(self.full_pass_s, perf_counter() - start)
 
     def _straighten(self, evidence: Evidence, skew: float) -> None:
         """Queue another standard pass if the photo is sideways or tilted."""
@@ -102,12 +104,17 @@ class ImageReader:
             rotation = detect_rotation(self.view.image)
             if rotation:
                 self.view = self.view.rotate(rotation)
-                self.plan.insert(0, "standard")
+                self.urgent.append("standard")
                 return
         if not self.deskewed and abs(skew) > MIN_SKEW_DEGREES:
             self.deskewed = True
             self.view = self.view.rotate(-skew)
-            self.plan.insert(0, "standard")
+            # A tilted picture is a photo, where glare and uneven light are likely: run the
+            # contrast-equalized pass next, on the straightened view, rather than repeating the
+            # plain one. On a slow server that saves the pass photos need most.
+            if "enhanced" in self.plan:
+                self.plan.remove("enhanced")
+            self.urgent.append("enhanced")
 
     def queue_warning_reread(self) -> None:
         """Crop the best reading of the warning paragraph and queue it to be read on its own.
@@ -170,7 +177,9 @@ class Verifier:
         checks: list[CheckResult] | None = None
         ocr_started = perf_counter()
         while pending := [r for r in readers if r.has_more]:
-            if checks is not None and perf_counter() + max(r.next_cost for r in pending) > deadline:
+            # Straightening passes always run: without them a sideways photo yields no reading at all.
+            over_budget = perf_counter() + max(r.next_cost for r in pending) > deadline
+            if checks is not None and over_budget and not any(r.urgent for r in pending):
                 break
             await asyncio.gather(*(run(r.run_next) for r in pending))
             evidences = [e for r in readers for e in r.evidences]

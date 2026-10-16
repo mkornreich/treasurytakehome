@@ -57,8 +57,8 @@
     "flagged": 6
    }
   },
-  "median_ms": 2780.0,
-  "max_ms": 3209
+  "median_ms": 3148.5,
+  "max_ms": 3777
  },
  "results": [
   {
@@ -66,11 +66,12 @@
    "brand": "BELLE ISLE",
    "type": "spirits",
    "overall": "review",
-   "elapsed_ms": 3070,
-   "tampered_elapsed_ms": 3066,
+   "elapsed_ms": 3730,
+   "tampered_elapsed_ms": 3674,
    "engines": [
     "ocr:binarized",
     "ocr:enhanced",
+    "ocr:enhanced-gray",
     "ocr:layout",
     "ocr:rotate-270",
     "ocr:rotate-90",
@@ -146,11 +147,12 @@
    "brand": "JETTYWAVE",
    "type": "spirits",
    "overall": "review",
-   "elapsed_ms": 2446,
-   "tampered_elapsed_ms": 2458,
+   "elapsed_ms": 3015,
+   "tampered_elapsed_ms": 3046,
    "engines": [
     "ocr:enhanced",
     "ocr:layout",
+    "ocr:rotate-270",
     "ocr:rotate-90",
     "ocr:standard",
     "ocr:warning"
@@ -224,10 +226,12 @@
    "brand": "APPALACHIAN SPIRITS",
    "type": "spirits",
    "overall": "review",
-   "elapsed_ms": 2606,
-   "tampered_elapsed_ms": 2586,
+   "elapsed_ms": 3283,
+   "tampered_elapsed_ms": 3249,
    "engines": [
+    "ocr:enhanced",
     "ocr:layout",
+    "ocr:rotate-90",
     "ocr:standard",
     "ocr:warning"
    ],
@@ -300,11 +304,12 @@
    "brand": "JUAN LOBO",
    "type": "spirits",
    "overall": "review",
-   "elapsed_ms": 2902,
-   "tampered_elapsed_ms": 2852,
+   "elapsed_ms": 3470,
+   "tampered_elapsed_ms": 3481,
    "engines": [
     "ocr:enhanced",
     "ocr:layout",
+    "ocr:rotate-90",
     "ocr:standard",
     "ocr:warning"
    ],
@@ -384,11 +389,12 @@
    "brand": "BLUE CHAIR BAY",
    "type": "spirits",
    "overall": "review",
-   "elapsed_ms": 2780,
-   "tampered_elapsed_ms": 2777,
+   "elapsed_ms": 3505,
+   "tampered_elapsed_ms": 3390,
    "engines": [
     "ocr:enhanced",
     "ocr:layout",
+    "ocr:rotate-270",
     "ocr:rotate-90",
     "ocr:standard"
    ],
@@ -447,9 +453,10 @@
    "brand": "SILK VELVET WHISKEY",
    "type": "spirits",
    "overall": "review",
-   "elapsed_ms": 3096,
-   "tampered_elapsed_ms": 2927,
+   "elapsed_ms": 3324,
+   "tampered_elapsed_ms": 3397,
    "engines": [
+    "ocr:binarized",
     "ocr:enhanced",
     "ocr:layout",
     "ocr:rotate-270",
@@ -526,8 +533,8 @@
    "brand": "CREATURE COMFORTS SPIRITS",
    "type": "spirits",
    "overall": "pass",
-   "elapsed_ms": 1257,
-   "tampered_elapsed_ms": 3131,
+   "elapsed_ms": 1211,
+   "tampered_elapsed_ms": 3113,
    "engines": [
     "ocr:layout",
     "ocr:standard",
@@ -602,11 +609,12 @@
    "brand": "MOUSTACHE",
    "type": "spirits",
    "overall": "review",
-   "elapsed_ms": 2451,
-   "tampered_elapsed_ms": 3120,
+   "elapsed_ms": 3141,
+   "tampered_elapsed_ms": 3133,
    "engines": [
     "ocr:enhanced",
     "ocr:layout",
+    "ocr:rotate-270",
     "ocr:rotate-90",
     "ocr:standard",
     "ocr:warning"
@@ -636,8 +644,8 @@
     {
      "field": "net_contents",
      "status": "review",
-     "message": "Label shows 900 ML, 1616 Ml; the application says 500 mL. The scanner often confuses these digits, so this may be a misread; please check the net contents on the label.",
-     "found": "900 ML",
+     "message": "Label shows 300 ML; the application says 500 mL. Only one reading of the label shows this, so it may be a misread; please check.",
+     "found": "300 ML",
      "outcome": "false review"
     },
     {
@@ -687,8 +695,8 @@
    "brand": "HENEBERY",
    "type": "spirits",
    "overall": "review",
-   "elapsed_ms": 3163,
-   "tampered_elapsed_ms": 3132,
+   "elapsed_ms": 3075,
+   "tampered_elapsed_ms": 3138,
    "engines": [
     "ocr:enhanced",
     "ocr:layout",
@@ -764,8 +772,8 @@
    "brand": "UNBOUND",
    "type": "wine",
    "overall": "pass",
-   "elapsed_ms": 1750,
-   "tampered_elapsed_ms": 2771,
+   "elapsed_ms": 1719,
+   "tampered_elapsed_ms": 3777,
    "engines": [
     "ocr:enhanced",
     "ocr:layout",
@@ -848,8 +856,8 @@
    "brand": "MIGLIAVACCA WINE COMPANY",
    "type": "wine",
    "overall": "review",
-   "elapsed_ms": 3209,
-   "tampered_elapsed_ms": 3208,
+   "elapsed_ms": 3380,
+   "tampered_elapsed_ms": 3275,
    "engines": [
     "ocr:enhanced",
     "ocr:layout",
@@ -927,8 +935,8 @@
    "brand": "ROMEO",
    "type": "wine",
    "overall": "pass",
-   "elapsed_ms": 814,
-   "tampered_elapsed_ms": 2925,
+   "elapsed_ms": 848,
+   "tampered_elapsed_ms": 3054,
    "engines": [
     "ocr:standard"
    ],
@@ -1008,11 +1016,12 @@
    "brand": "SOMAR",
    "type": "wine",
    "overall": "review",
-   "elapsed_ms": 2398,
-   "tampered_elapsed_ms": 2945,
+   "elapsed_ms": 3101,
+   "tampered_elapsed_ms": 3228,
    "engines": [
     "ocr:enhanced",
     "ocr:layout",
+    "ocr:rotate-270",
     "ocr:rotate-90",
     "ocr:standard",
     "ocr:warning"
@@ -1086,8 +1095,8 @@
    "brand": "D2",
    "type": "wine",
    "overall": "review",
-   "elapsed_ms": 3029,
-   "tampered_elapsed_ms": 3032,
+   "elapsed_ms": 3260,
+   "tampered_elapsed_ms": 3384,
    "engines": [
     "ocr:binarized",
     "ocr:enhanced",
@@ -1174,8 +1183,8 @@
    "brand": "ESSENCE",
    "type": "wine",
    "overall": "review",
-   "elapsed_ms": 3088,
-   "tampered_elapsed_ms": 3081,
+   "elapsed_ms": 3156,
+   "tampered_elapsed_ms": 3156,
    "engines": [
     "ocr:enhanced",
     "ocr:layout",
@@ -1260,11 +1269,12 @@
    "brand": "REVOLVER BREWING",
    "type": "beer",
    "overall": "review",
-   "elapsed_ms": 2724,
-   "tampered_elapsed_ms": 2692,
+   "elapsed_ms": 3362,
+   "tampered_elapsed_ms": 3285,
    "engines": [
     "ocr:binarized",
     "ocr:enhanced",
+    "ocr:enhanced-gray",
     "ocr:layout",
     "ocr:rotate-270",
     "ocr:rotate-90",
@@ -1325,8 +1335,8 @@
    "brand": "TWO LANTERNS",
    "type": "beer",
    "overall": "review",
-   "elapsed_ms": 2681,
-   "tampered_elapsed_ms": 2690,
+   "elapsed_ms": 2960,
+   "tampered_elapsed_ms": 3023,
    "engines": [
     "ocr:enhanced",
     "ocr:layout",
@@ -1402,8 +1412,8 @@
    "brand": "FIVE BOROUGHS",
    "type": "beer",
    "overall": "review",
-   "elapsed_ms": 2477,
-   "tampered_elapsed_ms": 2457,
+   "elapsed_ms": 2737,
+   "tampered_elapsed_ms": 2694,
    "engines": [
     "ocr:enhanced",
     "ocr:layout",
@@ -1481,8 +1491,8 @@
    "brand": "NEW BELGIUM",
    "type": "beer",
    "overall": "pass",
-   "elapsed_ms": 1257,
-   "tampered_elapsed_ms": 2819,
+   "elapsed_ms": 1368,
+   "tampered_elapsed_ms": 3069,
    "engines": [
     "ocr:enhanced",
     "ocr:layout",
@@ -1558,8 +1568,8 @@
    "brand": "LIDSKOE",
    "type": "beer",
    "overall": "pass",
-   "elapsed_ms": 1593,
-   "tampered_elapsed_ms": 2823,
+   "elapsed_ms": 1748,
+   "tampered_elapsed_ms": 3119,
    "engines": [
     "ocr:layout",
     "ocr:standard",
@@ -1641,9 +1651,10 @@
    "brand": "CANDYMAKER",
    "type": "beer",
    "overall": "review",
-   "elapsed_ms": 2780,
-   "tampered_elapsed_ms": 2757,
+   "elapsed_ms": 3583,
+   "tampered_elapsed_ms": 2966,
    "engines": [
+    "ocr:binarized",
     "ocr:enhanced",
     "ocr:layout",
     "ocr:rotate-270",

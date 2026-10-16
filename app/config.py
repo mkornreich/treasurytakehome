@@ -28,7 +28,7 @@ def _float(name: str, default: float) -> float:
 @dataclass(frozen=True)
 class Settings:
     # Local OCR keeps trying harder clean-ups until every check passes or this budget is spent.
-    ocr_budget_s: float = 3.0
+    ocr_budget_s: float = 3.5  # leaves room for one more pass and the reply inside ~5 s
     ocr_workers: int = 2
 
     # Optional AI vision reader. Off unless an API key is configured, because many

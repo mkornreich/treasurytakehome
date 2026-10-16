@@ -16,7 +16,7 @@ from pathlib import Path
 from typing import Annotated
 
 from fastapi import FastAPI, File, Form, HTTPException, Request, UploadFile
-from fastapi.responses import FileResponse, JSONResponse
+from fastapi.responses import FileResponse, JSONResponse, PlainTextResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import ValidationError
 
@@ -65,6 +65,12 @@ async def image_error(request: Request, exc: ImageError):
 @app.get("/", include_in_schema=False)
 async def index():
     return FileResponse(STATIC / "index.html", headers={"Cache-Control": "no-cache"})
+
+
+@app.get("/robots.txt", include_in_schema=False)
+async def robots():
+    """A prototype: keep every crawler out of the whole site."""
+    return PlainTextResponse("User-agent: *\nDisallow: /\n")
 
 
 @app.get("/api/health")

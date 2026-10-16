@@ -19,6 +19,12 @@ def test_index_and_config(client):
     assert client.get("/api/config").json()["vision"] == "off"
 
 
+def test_robots_blocks_all_crawlers(client):
+    response = client.get("/robots.txt")
+    assert response.status_code == 200
+    assert response.text == "User-agent: *\nDisallow: /\n"
+
+
 def test_samples_listing(client):
     samples = client.get("/api/samples").json()
     assert len(samples) >= 10

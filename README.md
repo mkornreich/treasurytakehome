@@ -2,9 +2,9 @@
 
 Label Check compares a picture of an alcohol beverage label with what the applicant typed into the COLA application, and says in plain language what matches, what doesn't, and what a person should look at. It handles one label at a time or a few hundred at once.
 
-**Deployed prototype:** _add the URL here after deploying (see [Deploying](#deploying))_
+**Deployed prototype:** <https://label-check-fz5a.onrender.com>
 
-- **Fast.** Clean labels come back in about 0.3 s. Angled, glary or sideways phone photos take 1–2 s. Real approved labels from the TTB registry take 2.8 s median and 3.2 s at worst, on a single CPU.
+- **Fast.** Clean labels come back in about 0.3 s. Angled, glary or sideways phone photos take 1–2 s. Real approved labels from the TTB registry take 3.1 s median and 3.8 s at worst, on a single CPU.
 - **Tested on real labels.** On 21 approved labels from TTB's Public COLA Registry, it raised **no false rejections** and **missed nothing**, including every deliberately tampered value. 78% of checks were confirmed automatically; the rest were honestly marked "Check". See [eval/REPORT.md](eval/REPORT.md).
 - **Works behind the firewall.** Reading is done by Tesseract OCR on the server itself, and the page loads nothing from outside sites. An optional AI reader (Claude vision) can help with hard photos when the network allows it, but the app never depends on it.
 - **Judgment, not just string matching.** "STONE'S THROW" matches "Stone's Throw". "750 mL" matches "75 cl", and "12 FL. OZ." matches "355 mL". A missing accent or a near-miss is sent to a person, not rejected.
@@ -47,7 +47,7 @@ uv run uvicorn app.main:app --port 8000
 uv run pytest
 ```
 
-There are 93 tests: unit tests for parsing and rules, regression tests for every failure found on real labels, the AI reader against a fake client, the HTTP API, and end-to-end runs over every sample label with real OCR. The end-to-end runs also assert each label finishes in under 5 seconds.
+There are 94 tests: unit tests for parsing and rules, regression tests for every failure found on real labels, the AI reader against a fake client, the HTTP API, and end-to-end runs over every sample label with real OCR. The end-to-end runs also assert each label finishes in under 5 seconds.
 
 ### Run the evaluation on real labels
 
@@ -114,7 +114,7 @@ The first command downloads 21 approved labels from TTB's Public COLA Registry. 
 
 **1. Reading** ([`app/extraction/`](app/extraction))
 - [`ocr.py`](app/extraction/ocr.py) runs Tesseract 5 (LSTM) in sparse-text mode and keeps every word with its position. Positions are mapped back through every rotation and resize ([`imaging.View`](app/imaging.py)), so highlights land on the original picture.
-- The pipeline ([`pipeline.py`](app/pipeline.py)) works in rounds and **stops as soon as every check passes**. An easy label costs one ~0.3 s pass. A hard one gets more passes within a 3-second OCR budget, each a different take:
+- The pipeline ([`pipeline.py`](app/pipeline.py)) works in rounds and **stops as soon as every check passes**. An easy label costs one ~0.3 s pass. A hard one gets more passes within a 3.5-second OCR budget, each a different take:
   - an auto-layout pass that finds text boxed in tables;
   - the darkest colour channel with local contrast, which recovers coloured ink washed out by glare;
   - turned 90°/270°, for text running up a side panel;
@@ -169,7 +169,7 @@ All optional, set as environment variables.
 | `VISION_MODEL` | `claude-opus-5-5` | Model for the AI reader. `claude-haiku-5-5` is faster and cheaper if latency matters more. |
 | `VISION_EFFORT` | `low` | Reasoning effort for the AI reader; transcription doesn't need more. |
 | `VISION_TIMEOUT_SECONDS` | `4.5` | How long to wait for the AI reader before answering without it. |
-| `OCR_BUDGET_SECONDS` | `3.0` | Time allowed for extra OCR passes on hard photos. |
+| `OCR_BUDGET_SECONDS` | `3.5` | Time allowed for extra OCR passes on hard photos. |
 | `OCR_WORKERS` | CPUs available | Parallel Tesseract processes (container CPU limits are respected). |
 | `MAX_UPLOAD_MB` | `15` | Per-picture upload limit. |
 | `PORT` | `8000` | Port inside the container. |
@@ -184,7 +184,7 @@ curl -s -X POST http://localhost:8000/api/verify \
   -F 'application={"brand_name":"OLD TOM DISTILLERY","alcohol_content":"45% Alc./Vol.","net_contents":"750 mL"}'
 ```
 
-The response is an `overall` status (`pass` / `review` / `fail`), a `headline`, and one entry per check with `status`, `message`, `expected`, `found` and `boxes`. The boxes are where it was found, as fractions of the picture's width and height. The response also includes `notices` about photo quality or the AI reader, the engines used, and timings. Other endpoints: `GET /api/health`, `GET /api/config`, `GET /api/samples`.
+The response is an `overall` status (`pass` / `review` / `fail`), a `headline`, and one entry per check with `status`, `message`, `expected`, `found` and `boxes`. The boxes are where it was found, as fractions of the picture's width and height. The response also includes `notices` about photo quality or the AI reader, the engines used, and timings. Other endpoints: `GET /api/health`, `GET /api/config`, `GET /api/samples`, and `GET /robots.txt`, which asks every crawler to stay out.
 
 ---
 
@@ -243,7 +243,7 @@ Regenerate them with `uv run python samples/generate_labels.py`. Real photos and
 
 The app is one stateless container, so any container host works. 1 vCPU / 1 GB RAM is enough: each label takes ≤1.5 s on one CPU. More CPUs speed up batches.
 
-- **Render:** *New → Blueprint →* select this repository ([`render.yaml`](render.yaml) is included). It uses Render's default 0.5 CPU / 512 MB instance, which checks a label in 0.5–2.8 s and four at once in about 3 s. The free instance is too slow for the 5-second target. To enable the AI reader, add `ANTHROPIC_API_KEY` under the service's *Environment* settings.
+- **Render:** *New → Blueprint →* select this repository ([`render.yaml`](render.yaml) is included). It uses Render's default 0.5 CPU / 512 MB instance, which checks a label in about 1–3.5 s, photos included. The free instance is too slow for the 5-second target. To enable the AI reader, add `ANTHROPIC_API_KEY` under the service's *Environment* settings.
 - **Azure Container Apps** (matches the agency's Azure environment):
 
   ```bash

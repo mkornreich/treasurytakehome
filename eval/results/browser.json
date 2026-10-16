@@ -1,0 +1,1730 @@
+{
+ "summary": {
+  "labels": 21,
+  "checks": 171,
+  "outcomes": {
+   "correct": 136,
+   "false review": 35
+  },
+  "labels_fully_correct": 5,
+  "by_field": {
+   "brand_name": {
+    "correct": 17,
+    "false review": 4
+   },
+   "class_type": {
+    "correct": 17,
+    "false review": 4
+   },
+   "alcohol_content": {
+    "correct": 20,
+    "false review": 1
+   },
+   "net_contents": {
+    "correct": 15,
+    "false review": 6
+   },
+   "bottler": {
+    "correct": 19,
+    "false review": 2
+   },
+   "warning_text": {
+    "false review": 11,
+    "correct": 10
+   },
+   "warning_caps": {
+    "correct": 18,
+    "false review": 1
+   },
+   "warning_bold": {
+    "false review": 6,
+    "correct": 13
+   },
+   "country_of_origin": {
+    "correct": 7
+   }
+  },
+  "tampered": {
+   "brand_name": {
+    "flagged": 21
+   },
+   "alcohol_content": {
+    "caught": 15,
+    "flagged": 6
+   },
+   "net_contents": {
+    "caught": 12,
+    "flagged": 8
+   }
+  },
+  "median_ms": 3168.0,
+  "max_ms": 3782,
+  "browser": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/155.0.0.0 Safari/537.36",
+  "cpus": 1
+ },
+ "results": [
+  {
+   "ttb_id": "26257001000366",
+   "brand": "BELLE ISLE",
+   "type": "spirits",
+   "overall": "review",
+   "elapsed_ms": 3240,
+   "tampered_elapsed_ms": 3266,
+   "engines": [
+    "ocr:enhanced",
+    "ocr:layout",
+    "ocr:standard",
+    "ocr:warning"
+   ],
+   "checks": [
+    {
+     "field": "brand_name",
+     "status": "pass",
+     "message": "The label and the application are the same.",
+     "found": "BELLE ISLE",
+     "outcome": "correct"
+    },
+    {
+     "field": "class_type",
+     "status": "pass",
+     "message": "The text is the same. Only the capital letters are different. The label shows \u201cSTRAIGHT BOURBON WHISKEY\u201d.",
+     "found": "STRAIGHT BOURBON WHISKEY",
+     "outcome": "correct"
+    },
+    {
+     "field": "alcohol_content",
+     "status": "review",
+     "message": "The label shows 3.8%. The application shows 53.5%. Only one reading of the label shows this. The scanner can make reading errors. Examine the label.",
+     "found": "3.8",
+     "outcome": "correct"
+    },
+    {
+     "field": "net_contents",
+     "status": "pass",
+     "message": "The label shows the same value: 750ML.",
+     "found": "750ML",
+     "outcome": "correct"
+    },
+    {
+     "field": "bottler",
+     "status": "pass",
+     "message": "The text is the same. Only the punctuation or the spaces are different. The label shows \u201cBELLE ISLE CRAFT SPIRITS RICHMOND, VA\u201d.",
+     "found": "BELLE ISLE CRAFT SPIRITS RICHMOND, VA",
+     "outcome": "correct"
+    },
+    {
+     "field": "warning_text",
+     "status": "review",
+     "message": "The text is almost the same as the required statement. Compare these items. \u201c(1)\u201d read as \u201c[)\u201d. Punctuation \u201cGeneral,\u201d read as \u201cGeneral.\u201d \u201cdrink alcoholic\u201d read as \u201cGrink alcoholc\u201d. The difference can be a reading error.",
+     "found": "GOVERNMENT WARNING [) According to the Surgeon General. women should not Grink alcoholc beverages during pregnancy because of the risk of birth defects. (2) Consumption of alcoholic beverages impairs your ability to drive a car or operate machinery, and may couse health problems",
+     "outcome": "false review"
+    },
+    {
+     "field": "warning_caps",
+     "status": "pass",
+     "message": "\u201cGOVERNMENT WARNING:\u201d is in capital letters.",
+     "found": "GOVERNMENT WARNING:",
+     "outcome": "correct"
+    },
+    {
+     "field": "warning_bold",
+     "status": "review",
+     "message": "The tool measured \u201cGOVERNMENT WARNING:\u201d as not bold. Bold type is required. The heading letters and the warning text are almost the same thickness (1.06 times). Examine the label.",
+     "found": null,
+     "outcome": "false review"
+    }
+   ],
+   "tampered": {
+    "brand_name": "flagged",
+    "alcohol_content": "caught",
+    "net_contents": "caught"
+   }
+  },
+  {
+   "ttb_id": "26208001000770",
+   "brand": "JETTYWAVE",
+   "type": "spirits",
+   "overall": "review",
+   "elapsed_ms": 3333,
+   "tampered_elapsed_ms": 2968,
+   "engines": [
+    "ocr:enhanced",
+    "ocr:layout",
+    "ocr:rotate-270",
+    "ocr:rotate-90",
+    "ocr:standard",
+    "ocr:warning"
+   ],
+   "checks": [
+    {
+     "field": "brand_name",
+     "status": "pass",
+     "message": "The label and the application are the same.",
+     "found": "JETTYWAVE",
+     "outcome": "correct"
+    },
+    {
+     "field": "class_type",
+     "status": "review",
+     "message": "The tool did not find this text on the label. The nearest text is \u201cVo\u2014 a)\u201d.",
+     "found": "Vo\u2014 a)",
+     "outcome": "false review"
+    },
+    {
+     "field": "alcohol_content",
+     "status": "pass",
+     "message": "The label shows the same value: 43% alcohol by volume.",
+     "found": "43%",
+     "outcome": "correct"
+    },
+    {
+     "field": "net_contents",
+     "status": "pass",
+     "message": "The label shows the same value: 1L.",
+     "found": "1L",
+     "outcome": "correct"
+    },
+    {
+     "field": "bottler",
+     "status": "pass",
+     "message": "The text is the same. Only the capital letters are different. The label shows \u201cJETTYWAVE DISTILLERY, HALF MOON BAY, CA\u201d.",
+     "found": "JETTYWAVE DISTILLERY, HALF MOON BAY, CA",
+     "outcome": "correct"
+    },
+    {
+     "field": "warning_text",
+     "status": "review",
+     "message": "The text is almost the same as the required statement. Compare these items. \u201cConsumption\u201d read as \u201cCONSUMPTIO\u201d. The difference can be a reading error.",
+     "found": "GOVERNMENT WARNING: (1) ACCORDING TO THE SURGEON GENERAL, WOMEN SHOULD NOT DRINK ALCOHOLIC BEVERAGES DURING PREGNANCY BECAUSE OF THE RISK OF BIRTH DEFECTS. (2) CONSUMPTIO OF ALCOHOLIC BEVERAGES IMPAIRS YOUR ABILITY TO DRIVE A CAR OR OPERATE MACHINERY, AND MAY CAUSE HEALTH PROBLEMS.",
+     "outcome": "false review"
+    },
+    {
+     "field": "warning_caps",
+     "status": "pass",
+     "message": "\u201cGOVERNMENT WARNING:\u201d is in capital letters.",
+     "found": "GOVERNMENT WARNING:",
+     "outcome": "correct"
+    },
+    {
+     "field": "warning_bold",
+     "status": "pass",
+     "message": "\u201cGOVERNMENT WARNING:\u201d is in bold type. The heading letters are 1.41 times as thick as the warning text.",
+     "found": null,
+     "outcome": "correct"
+    }
+   ],
+   "tampered": {
+    "brand_name": "flagged",
+    "alcohol_content": "caught",
+    "net_contents": "caught"
+   }
+  },
+  {
+   "ttb_id": "26215001000216",
+   "brand": "APPALACHIAN SPIRITS",
+   "type": "spirits",
+   "overall": "review",
+   "elapsed_ms": 2867,
+   "tampered_elapsed_ms": 3661,
+   "engines": [
+    "ocr:enhanced",
+    "ocr:layout",
+    "ocr:standard",
+    "ocr:warning"
+   ],
+   "checks": [
+    {
+     "field": "brand_name",
+     "status": "pass",
+     "message": "The label and the application are the same.",
+     "found": "APPALACHIAN SPIRITS",
+     "outcome": "correct"
+    },
+    {
+     "field": "class_type",
+     "status": "pass",
+     "message": "The text is the same. Only the capital letters are different. The label shows \u201cGIN\u201d.",
+     "found": "GIN",
+     "outcome": "correct"
+    },
+    {
+     "field": "alcohol_content",
+     "status": "pass",
+     "message": "The label shows the same value: 40% alcohol by volume.",
+     "found": "40%",
+     "outcome": "correct"
+    },
+    {
+     "field": "net_contents",
+     "status": "pass",
+     "message": "The label shows the same value: 750ml.",
+     "found": "750ml",
+     "outcome": "correct"
+    },
+    {
+     "field": "bottler",
+     "status": "pass",
+     "message": "The label shows the same name and address: \u201cAPPALACHIAN SPIRITS, LLC \u2026 MECHANICSBURG, PENNSYLVANIA\u201d.",
+     "found": "APPALACHIAN SPIRITS, LLC \u2026 MECHANICSBURG, PENNSYLVANIA",
+     "outcome": "correct"
+    },
+    {
+     "field": "warning_text",
+     "status": "pass",
+     "message": "The warning is word-for-word the same as the required statement.",
+     "found": "GOVERNMENT WARNING: (1) According to the Surgeon General, women should not drink alcoholic beverages during pregnancy because of the risk of birth defects. (2) Consumption of alcoholic beverages impairs your ability to drive a car or operate machinery, and may cause health problems.",
+     "outcome": "correct"
+    },
+    {
+     "field": "warning_caps",
+     "status": "pass",
+     "message": "\u201cGOVERNMENT WARNING:\u201d is in capital letters.",
+     "found": "GOVERNMENT WARNING:",
+     "outcome": "correct"
+    },
+    {
+     "field": "warning_bold",
+     "status": "review",
+     "message": "The tool did not measure the type weight of \u201cGOVERNMENT WARNING:\u201d. Examine the label to make sure that the heading is in bold type.",
+     "found": null,
+     "outcome": "false review"
+    }
+   ],
+   "tampered": {
+    "brand_name": "flagged",
+    "alcohol_content": "flagged",
+    "net_contents": "flagged"
+   }
+  },
+  {
+   "ttb_id": "18302001000230",
+   "brand": "JUAN LOBO",
+   "type": "spirits",
+   "overall": "review",
+   "elapsed_ms": 3174,
+   "tampered_elapsed_ms": 3446,
+   "engines": [
+    "ocr:enhanced",
+    "ocr:layout",
+    "ocr:standard",
+    "ocr:warning"
+   ],
+   "checks": [
+    {
+     "field": "brand_name",
+     "status": "pass",
+     "message": "The label and the application are the same.",
+     "found": "JUAN LOBO",
+     "outcome": "correct"
+    },
+    {
+     "field": "class_type",
+     "status": "pass",
+     "message": "The label and the application are the same.",
+     "found": "Tequila",
+     "outcome": "correct"
+    },
+    {
+     "field": "alcohol_content",
+     "status": "pass",
+     "message": "The label shows the same value: 40% alcohol by volume.",
+     "found": "40%",
+     "outcome": "correct"
+    },
+    {
+     "field": "net_contents",
+     "status": "review",
+     "message": "The tool did not find the net contents on the label, for example \u201c750 mL\u201d.",
+     "found": null,
+     "outcome": "false review"
+    },
+    {
+     "field": "bottler",
+     "status": "pass",
+     "message": "The text is the same. The label uses the full word for an abbreviation: \u201cJUAN LOBO TEQUILA, LLC BUDA, TEXAS\u201d.",
+     "found": "JUAN LOBO TEQUILA, LLC BUDA, TEXAS",
+     "outcome": "correct"
+    },
+    {
+     "field": "country_of_origin",
+     "status": "pass",
+     "message": "The label and the application are the same.",
+     "found": "Mexico",
+     "outcome": "correct"
+    },
+    {
+     "field": "warning_text",
+     "status": "review",
+     "message": "The text is almost the same as the required statement. Compare these items. \u201c(1)\u201d not read. Punctuation \u201cshould\u201d read as \u201cSHOULD.\u201d The difference can be a reading error.",
+     "found": "GOVERNMENT WARNING: (!)ACCORDING TO THE SURGEON GENERAL, WOMEN SHOULD. NOT DRINK ALCOHOLIC BEVERAGES DURING PREGNANCY BECAUSE OF THE RISK OF BIRTH DEFECTS. (2) CONSUMPTION OF ALCOHOLIC BEVERAGES IMPAIRS YOUR ABILITY TO DRIVE A CAR OR OPERATE MACHINERY, AND MAY CAUSE HEALTH PROBLEMS.",
+     "outcome": "false review"
+    },
+    {
+     "field": "warning_caps",
+     "status": "pass",
+     "message": "\u201cGOVERNMENT WARNING:\u201d is in capital letters.",
+     "found": "GOVERNMENT WARNING:",
+     "outcome": "correct"
+    },
+    {
+     "field": "warning_bold",
+     "status": "pass",
+     "message": "\u201cGOVERNMENT WARNING:\u201d is in bold type. The heading letters are 1.34 times as thick as the warning text.",
+     "found": null,
+     "outcome": "correct"
+    }
+   ],
+   "tampered": {
+    "brand_name": "flagged",
+    "alcohol_content": "caught",
+    "net_contents": "flagged"
+   }
+  },
+  {
+   "ttb_id": "26069001001065",
+   "brand": "BLUE CHAIR BAY",
+   "type": "spirits",
+   "overall": "review",
+   "elapsed_ms": 3028,
+   "tampered_elapsed_ms": 3041,
+   "engines": [
+    "ocr:enhanced",
+    "ocr:layout",
+    "ocr:rotate-270",
+    "ocr:rotate-90",
+    "ocr:standard"
+   ],
+   "checks": [
+    {
+     "field": "brand_name",
+     "status": "review",
+     "message": "The tool did not find this text on the label. The nearest text is \u201cChain BAY\u201d.",
+     "found": "Chain BAY",
+     "outcome": "false review"
+    },
+    {
+     "field": "class_type",
+     "status": "pass",
+     "message": "The text is the same. Only the capital letters are different. The label shows \u201cSPICED RUM\u201d.",
+     "found": "SPICED RUM",
+     "outcome": "correct"
+    },
+    {
+     "field": "alcohol_content",
+     "status": "pass",
+     "message": "The label shows the same value: 35% alcohol by volume.",
+     "found": "35%",
+     "outcome": "correct"
+    },
+    {
+     "field": "net_contents",
+     "status": "review",
+     "message": "The tool did not find the net contents on the label, for example \u201c750 mL\u201d.",
+     "found": null,
+     "outcome": "false review"
+    },
+    {
+     "field": "bottler",
+     "status": "review",
+     "message": "The tool did not find this text on the label. The nearest text is \u201cNext Century Spirits, Morrison, TH\u201d.",
+     "found": "Next Century Spirits, Morrison, TH",
+     "outcome": "false review"
+    },
+    {
+     "field": "warning_text",
+     "status": "review",
+     "message": "The tool cannot read the government warning. The warning is not on the label, or it is too small or not clear.",
+     "found": null,
+     "outcome": "false review"
+    }
+   ],
+   "tampered": {
+    "brand_name": "flagged",
+    "alcohol_content": "caught",
+    "net_contents": "flagged"
+   }
+  },
+  {
+   "ttb_id": "26195001000540",
+   "brand": "SILK VELVET WHISKEY",
+   "type": "spirits",
+   "overall": "review",
+   "elapsed_ms": 3727,
+   "tampered_elapsed_ms": 3221,
+   "engines": [
+    "ocr:binarized",
+    "ocr:enhanced",
+    "ocr:layout",
+    "ocr:rotate-270",
+    "ocr:rotate-90",
+    "ocr:standard",
+    "ocr:warning"
+   ],
+   "checks": [
+    {
+     "field": "brand_name",
+     "status": "review",
+     "message": "The tool did not find this text on the label. The nearest text is \u201cSilk Velvet is\u201d.",
+     "found": "Silk Velvet is",
+     "outcome": "false review"
+    },
+    {
+     "field": "class_type",
+     "status": "review",
+     "message": "The tool did not find this text on the label. The font can be decorative, or the text can be hard to read. Examine the label.",
+     "found": null,
+     "outcome": "false review"
+    },
+    {
+     "field": "alcohol_content",
+     "status": "pass",
+     "message": "The label shows the same value: 53.5% alcohol by volume.",
+     "found": "53.5%",
+     "outcome": "correct"
+    },
+    {
+     "field": "net_contents",
+     "status": "pass",
+     "message": "The label shows the same value: 750ml.",
+     "found": "750ml",
+     "outcome": "correct"
+    },
+    {
+     "field": "bottler",
+     "status": "pass",
+     "message": "The text is the same. Only the capital letters are different. The label shows \u201cWESTERN KENTUCKY DISTILLING CO, BEAVER DAM, KY\u201d.",
+     "found": "WESTERN KENTUCKY DISTILLING CO, BEAVER DAM, KY",
+     "outcome": "correct"
+    },
+    {
+     "field": "warning_text",
+     "status": "review",
+     "message": "The text is almost the same as the required statement. Compare these items. \u201cto\u201d read as \u201cT0\u201d. Punctuation \u201cmachinery,\u201d read as \u201cMACHINERY\u201d. The difference can be a reading error.",
+     "found": "GOVERNMENT WARNING: (1) ACCORDING TO THE SURGEON GENERAL, WOMEN SHOULD NOT DRINK ALCOHOLIC BEVERAGES DURING PREGNANCY BECAUSE OF THE RISK OF BIRTH DEFECTS. (2) CONSUMPTION OF ALCOHOLIC BEVERAGES IMPAIRS YOUR ABILITY T0 DRIVE A CAR OR OPERATE MACHINERY AND MAY CAUSE HEALTH PROBLEMS.",
+     "outcome": "false review"
+    },
+    {
+     "field": "warning_caps",
+     "status": "pass",
+     "message": "\u201cGOVERNMENT WARNING:\u201d is in capital letters.",
+     "found": "GOVERNMENT WARNING:",
+     "outcome": "correct"
+    },
+    {
+     "field": "warning_bold",
+     "status": "review",
+     "message": "The tool measured \u201cGOVERNMENT WARNING:\u201d as not bold. Bold type is required. The heading letters and the warning text are almost the same thickness (1.03 times). Examine the label.",
+     "found": null,
+     "outcome": "false review"
+    }
+   ],
+   "tampered": {
+    "brand_name": "flagged",
+    "alcohol_content": "caught",
+    "net_contents": "caught"
+   }
+  },
+  {
+   "ttb_id": "26247001000225",
+   "brand": "CREATURE COMFORTS SPIRITS",
+   "type": "spirits",
+   "overall": "pass",
+   "elapsed_ms": 1403,
+   "tampered_elapsed_ms": 3782,
+   "engines": [
+    "ocr:layout",
+    "ocr:standard",
+    "ocr:warning"
+   ],
+   "checks": [
+    {
+     "field": "brand_name",
+     "status": "pass",
+     "message": "The label and the application are the same.",
+     "found": "CREATURE COMFORTS SPIRITS",
+     "outcome": "correct"
+    },
+    {
+     "field": "class_type",
+     "status": "pass",
+     "message": "The text is the same. Only the capital letters are different. The label shows \u201cLONDON DRY GIN\u201d.",
+     "found": "LONDON DRY GIN",
+     "outcome": "correct"
+    },
+    {
+     "field": "alcohol_content",
+     "status": "pass",
+     "message": "The label shows the same value: 47.5% alcohol by volume.",
+     "found": "47.5%",
+     "outcome": "correct"
+    },
+    {
+     "field": "net_contents",
+     "status": "pass",
+     "message": "The label shows the same value: 750 ML.",
+     "found": "750 ML",
+     "outcome": "correct"
+    },
+    {
+     "field": "bottler",
+     "status": "pass",
+     "message": "The label shows the same name and address: \u201cCREATURE COMFORTS SPIRITS \u2026 ATHENS, GA\u201d.",
+     "found": "CREATURE COMFORTS SPIRITS \u2026 ATHENS, GA",
+     "outcome": "correct"
+    },
+    {
+     "field": "warning_text",
+     "status": "pass",
+     "message": "The warning is word-for-word the same as the required statement.",
+     "found": "GOVERNMENT WARNING: (1) ACCORDING TO THE SURGEON GENERAL, WOMEN SHOULD NOT DRINK ALCOHOLIC BEVERAGES DURING PREGNANCY BECAUSE OF THE RISK OF BIRTH DEFECTS. (2) CONSUMPTION OF ALCOHOLIC BEVERAGES IMPAIRS YOUR ABILITY TO DRIVE A CAR OR OPERATE MACHINERY, AND MAY CAUSE HEALTH PROBLEMS.",
+     "outcome": "correct"
+    },
+    {
+     "field": "warning_caps",
+     "status": "pass",
+     "message": "\u201cGOVERNMENT WARNING:\u201d is in capital letters.",
+     "found": "GOVERNMENT WARNING:",
+     "outcome": "correct"
+    },
+    {
+     "field": "warning_bold",
+     "status": "pass",
+     "message": "\u201cGOVERNMENT WARNING:\u201d is in bold type. The heading letters are 1.48 times as thick as the warning text.",
+     "found": null,
+     "outcome": "correct"
+    }
+   ],
+   "tampered": {
+    "brand_name": "flagged",
+    "alcohol_content": "caught",
+    "net_contents": "caught"
+   }
+  },
+  {
+   "ttb_id": "26271001000633",
+   "brand": "MOUSTACHE",
+   "type": "spirits",
+   "overall": "review",
+   "elapsed_ms": 2715,
+   "tampered_elapsed_ms": 2712,
+   "engines": [
+    "ocr:enhanced",
+    "ocr:layout",
+    "ocr:rotate-90",
+    "ocr:standard",
+    "ocr:warning"
+   ],
+   "checks": [
+    {
+     "field": "brand_name",
+     "status": "pass",
+     "message": "The label and the application are the same.",
+     "found": "MOUSTACHE",
+     "outcome": "correct"
+    },
+    {
+     "field": "class_type",
+     "status": "pass",
+     "message": "The text is the same. Only the capital letters are different. The label shows \u201cLONDON DRY GIN\u201d.",
+     "found": "LONDON DRY GIN",
+     "outcome": "correct"
+    },
+    {
+     "field": "alcohol_content",
+     "status": "pass",
+     "message": "The label shows the same value: 43% alcohol by volume.",
+     "found": "43%",
+     "outcome": "correct"
+    },
+    {
+     "field": "net_contents",
+     "status": "review",
+     "message": "The label shows 900 ML, 1616 Ml. The application shows 500 mL. The scanner often reads these digits incorrectly. Examine the net contents on the label.",
+     "found": "900 ML",
+     "outcome": "false review"
+    },
+    {
+     "field": "bottler",
+     "status": "pass",
+     "message": "The text is the same. Only the punctuation or the spaces are different. The label shows \u201cNCCGA OF CT, INC. GLASTONBURY CT\u201d.",
+     "found": "NCCGA OF CT, INC. GLASTONBURY CT",
+     "outcome": "correct"
+    },
+    {
+     "field": "country_of_origin",
+     "status": "pass",
+     "message": "The text is the same. Only the capital letters are different. The label shows \u201cSWITZERLAND\u201d.",
+     "found": "SWITZERLAND",
+     "outcome": "correct"
+    },
+    {
+     "field": "warning_text",
+     "status": "review",
+     "message": "The text is almost the same as the required statement. Compare these items. \u201c(1)\u201d read as \u201c()\u201d. \u201cConsumption\u201d read as \u201cCONSUMTION\u201d. Punctuation \u201cproblems.\u201d read as \u201cPROBLEMS\u201d. The difference can be a reading error.",
+     "found": "GOVERNMENT WARNING: () ACCORDING TO THE SURGEON GENERAL, WOMEN SHOULD NOT DRINK ALCOHOLIC BEVERAGES DURING PREGNANCY BECAUSE OF THE RISK OF BIRTH DEFECTS. (2) CONSUMTION OF ALCOHOLIC BEVERAGES IMPAIRS YOUR ABILITY TO DRIVE A CAR OR OPERATE MACHINERY, AND MAY CAUSE HEALTH PROBLEMS",
+     "outcome": "correct"
+    },
+    {
+     "field": "warning_caps",
+     "status": "pass",
+     "message": "\u201cGOVERNMENT WARNING:\u201d is in capital letters.",
+     "found": "GOVERNMENT WARNING:",
+     "outcome": "correct"
+    },
+    {
+     "field": "warning_bold",
+     "status": "pass",
+     "message": "\u201cGOVERNMENT WARNING:\u201d is in bold type. The heading letters are 1.34 times as thick as the warning text.",
+     "found": null,
+     "outcome": "correct"
+    }
+   ],
+   "tampered": {
+    "brand_name": "flagged",
+    "alcohol_content": "caught",
+    "net_contents": "caught"
+   }
+  },
+  {
+   "ttb_id": "26159001000652",
+   "brand": "HENEBERY",
+   "type": "spirits",
+   "overall": "review",
+   "elapsed_ms": 3560,
+   "tampered_elapsed_ms": 3562,
+   "engines": [
+    "ocr:enhanced",
+    "ocr:layout",
+    "ocr:rotate-270",
+    "ocr:rotate-90",
+    "ocr:standard",
+    "ocr:warning"
+   ],
+   "checks": [
+    {
+     "field": "brand_name",
+     "status": "pass",
+     "message": "The label and the application are the same.",
+     "found": "HENEBERY",
+     "outcome": "correct"
+    },
+    {
+     "field": "class_type",
+     "status": "pass",
+     "message": "The text is the same. Only the capital letters are different. The label shows \u201cAMERICAN SINGLE MALT WHISKEY\u201d.",
+     "found": "AMERICAN SINGLE MALT WHISKEY",
+     "outcome": "correct"
+    },
+    {
+     "field": "alcohol_content",
+     "status": "pass",
+     "message": "The label shows the same value: 42% alcohol by volume.",
+     "found": "42%",
+     "outcome": "correct"
+    },
+    {
+     "field": "net_contents",
+     "status": "review",
+     "message": "The label shows 50 ML. The application shows 750 mL. Only one reading of the label shows this. The scanner can make reading errors. Examine the label.",
+     "found": "50 ML",
+     "outcome": "false review"
+    },
+    {
+     "field": "bottler",
+     "status": "pass",
+     "message": "The label shows the same name and address: \u201cHENEBERY SPIRITS, INC \u2026 Vista, CALIFORNIA\u201d.",
+     "found": "HENEBERY SPIRITS, INC \u2026 Vista, CALIFORNIA",
+     "outcome": "correct"
+    },
+    {
+     "field": "warning_text",
+     "status": "pass",
+     "message": "The warning is word-for-word the same as the required statement.",
+     "found": "GOVERNMENT WARNING: (1) ACCORDING TO THE SURGEON GENERAL, WOMEN SHOULD NOT DRINK ALCOHOLIC BEVERAGES DURING PREGNANCY BECAUSE OF THE RISK OF BIRTH DEFECTS. (2) CONSUMPTION OF ALCOHOLIC BEVERAGES IMPAIRS YOUR ABILITY TO DRIVEA CAR OR OPERATE MACHINERY, AND MAY CAUSE HEALTH PROBLEMS.",
+     "outcome": "correct"
+    },
+    {
+     "field": "warning_caps",
+     "status": "pass",
+     "message": "\u201cGOVERNMENT WARNING:\u201d is in capital letters.",
+     "found": "GOVERNMENT WARNING:",
+     "outcome": "correct"
+    },
+    {
+     "field": "warning_bold",
+     "status": "review",
+     "message": "The tool measured \u201cGOVERNMENT WARNING:\u201d as not bold. Bold type is required. The heading letters and the warning text are almost the same thickness (1.00 times). Examine the label.",
+     "found": null,
+     "outcome": "false review"
+    }
+   ],
+   "tampered": {
+    "brand_name": "flagged",
+    "alcohol_content": "caught",
+    "net_contents": "caught"
+   }
+  },
+  {
+   "ttb_id": "26148001001008",
+   "brand": "UNBOUND",
+   "type": "wine",
+   "overall": "pass",
+   "elapsed_ms": 1844,
+   "tampered_elapsed_ms": 3319,
+   "engines": [
+    "ocr:enhanced",
+    "ocr:layout",
+    "ocr:standard",
+    "ocr:warning"
+   ],
+   "checks": [
+    {
+     "field": "brand_name",
+     "status": "pass",
+     "message": "The label and the application are the same.",
+     "found": "UNBOUND",
+     "outcome": "correct"
+    },
+    {
+     "field": "class_type",
+     "status": "pass",
+     "message": "The label and the application are the same.",
+     "found": "Rose Wine",
+     "outcome": "correct"
+    },
+    {
+     "field": "alcohol_content",
+     "status": "pass",
+     "message": "The label shows the same value: 13% alcohol by volume.",
+     "found": "13%",
+     "outcome": "correct"
+    },
+    {
+     "field": "net_contents",
+     "status": "pass",
+     "message": "The label shows the same value: 750ml.",
+     "found": "750ml",
+     "outcome": "correct"
+    },
+    {
+     "field": "bottler",
+     "status": "pass",
+     "message": "The text is the same. Only the capital letters are different. The label shows \u201cNZ WINE HOME, Napa, CA\u201d.",
+     "found": "NZ WINE HOME, Napa, CA",
+     "outcome": "correct"
+    },
+    {
+     "field": "country_of_origin",
+     "status": "pass",
+     "message": "The text is the same. Only the capital letters are different. The label shows \u201cNEW ZEALAND\u201d.",
+     "found": "NEW ZEALAND",
+     "outcome": "correct"
+    },
+    {
+     "field": "warning_text",
+     "status": "pass",
+     "message": "The warning is word-for-word the same as the required statement.",
+     "found": "GOVERNMENT WARNING: (1) According to the Surgeon General, wom- en should not drink alcoholic beverages during pregnancy because of the risk of birth defects. (2) Consumption of alcoholic beverages impairs your ability to drive a car or operate machinery, and may cause health problems.",
+     "outcome": "correct"
+    },
+    {
+     "field": "warning_caps",
+     "status": "pass",
+     "message": "\u201cGOVERNMENT WARNING:\u201d is in capital letters.",
+     "found": "GOVERNMENT WARNING:",
+     "outcome": "correct"
+    },
+    {
+     "field": "warning_bold",
+     "status": "pass",
+     "message": "\u201cGOVERNMENT WARNING:\u201d is in bold type. The heading letters are 1.34 times as thick as the warning text.",
+     "found": null,
+     "outcome": "correct"
+    }
+   ],
+   "tampered": {
+    "brand_name": "flagged",
+    "alcohol_content": "caught",
+    "net_contents": "caught"
+   }
+  },
+  {
+   "ttb_id": "26153001000868",
+   "brand": "MIGLIAVACCA WINE COMPANY",
+   "type": "wine",
+   "overall": "review",
+   "elapsed_ms": 3641,
+   "tampered_elapsed_ms": 3079,
+   "engines": [
+    "ocr:enhanced",
+    "ocr:layout",
+    "ocr:rotate-270",
+    "ocr:rotate-90",
+    "ocr:standard",
+    "ocr:warning"
+   ],
+   "checks": [
+    {
+     "field": "brand_name",
+     "status": "pass",
+     "message": "The label and the application are the same.",
+     "found": "MIGLIAVACCA WINE COMPANY",
+     "outcome": "correct"
+    },
+    {
+     "field": "class_type",
+     "status": "review",
+     "message": "The letters are the same, but the accent marks are different. The label shows \u201cROSE OF PINOT NOIR\u201d. Make sure that this difference is permitted.",
+     "found": "ROSE OF PINOT NOIR",
+     "outcome": "false review"
+    },
+    {
+     "field": "alcohol_content",
+     "status": "pass",
+     "message": "The label shows the same value: 13% alcohol by volume.",
+     "found": "13%",
+     "outcome": "correct"
+    },
+    {
+     "field": "net_contents",
+     "status": "pass",
+     "message": "The label shows the same value: 750 ML.",
+     "found": "750 ML",
+     "outcome": "correct"
+    },
+    {
+     "field": "bottler",
+     "status": "pass",
+     "message": "The text is the same. Only the punctuation or the spaces are different. The label shows \u201cMIGLIAVACCA WINE COMPANY NAPA, CA\u201d.",
+     "found": "MIGLIAVACCA WINE COMPANY NAPA, CA",
+     "outcome": "correct"
+    },
+    {
+     "field": "warning_text",
+     "status": "pass",
+     "message": "The warning is word-for-word the same as the required statement.",
+     "found": "GOVERNMENT WARNING: (1) ACCORDING TO THE SURGEON GENERAL, WOMEN SHOULD NOT DRINK ALCOHOLIC BEVERAGES DURING PREGNANCY BECAUSE OF THE RISK OF BIRTH DEFECTS. (2) CONSUMPTION OF ALCOHOLIC BEVERAGES IMPAIRS YOUR ABILITY TO DRIVE A CAR OR OPERATE MACHINERY, AND MAY CAUSE HEALTH PROBLEMS.",
+     "outcome": "correct"
+    },
+    {
+     "field": "warning_caps",
+     "status": "pass",
+     "message": "\u201cGOVERNMENT WARNING:\u201d is in capital letters.",
+     "found": "GOVERNMENT WARNING:",
+     "outcome": "correct"
+    },
+    {
+     "field": "warning_bold",
+     "status": "pass",
+     "message": "\u201cGOVERNMENT WARNING:\u201d is in bold type. The heading letters are 1.50 times as thick as the warning text.",
+     "found": null,
+     "outcome": "correct"
+    }
+   ],
+   "tampered": {
+    "brand_name": "flagged",
+    "alcohol_content": "caught",
+    "net_contents": "caught"
+   }
+  },
+  {
+   "ttb_id": "26161001000885",
+   "brand": "ROMEO",
+   "type": "wine",
+   "overall": "pass",
+   "elapsed_ms": 765,
+   "tampered_elapsed_ms": 3344,
+   "engines": [
+    "ocr:standard"
+   ],
+   "checks": [
+    {
+     "field": "brand_name",
+     "status": "pass",
+     "message": "The label and the application are the same.",
+     "found": "ROMEO",
+     "outcome": "correct"
+    },
+    {
+     "field": "class_type",
+     "status": "pass",
+     "message": "The label and the application are the same.",
+     "found": "Rose Wine",
+     "outcome": "correct"
+    },
+    {
+     "field": "alcohol_content",
+     "status": "pass",
+     "message": "The label shows the same value: 12.5% alcohol by volume.",
+     "found": "12.5%",
+     "outcome": "correct"
+    },
+    {
+     "field": "net_contents",
+     "status": "pass",
+     "message": "The label shows the same value: 750ML.",
+     "found": "750ML",
+     "outcome": "correct"
+    },
+    {
+     "field": "bottler",
+     "status": "pass",
+     "message": "The text is the same. Only the punctuation or the spaces are different. The label shows \u201cMAJUELOS AMERICA CORP. MIAMI BEACH, FL\u201d.",
+     "found": "MAJUELOS AMERICA CORP. MIAMI BEACH, FL",
+     "outcome": "correct"
+    },
+    {
+     "field": "country_of_origin",
+     "status": "pass",
+     "message": "The label and the application are the same.",
+     "found": "Spain",
+     "outcome": "correct"
+    },
+    {
+     "field": "warning_text",
+     "status": "pass",
+     "message": "The warning is word-for-word the same as the required statement.",
+     "found": "GOVERNMENT WARNING: (1) ACCORDING TO THE SURGEON GENERAL, WOMEN SHOULD NOT DRINK ALCOHOLIC BEVERAGES DURING PREGNANCY BECAUSE OF THE RISK OF BIRTH DEFECTS. (2) CONSUMPTION OF ALCOHOLIC BEVERAGES IMPAIRS YOUR ABILITY TO DRIVE A CAR OR OPERATE MACHINERY, AND MAY CAUSE HEALTH PROBLEMS.",
+     "outcome": "correct"
+    },
+    {
+     "field": "warning_caps",
+     "status": "pass",
+     "message": "\u201cGOVERNMENT WARNING:\u201d is in capital letters.",
+     "found": "GOVERNMENT WARNING:",
+     "outcome": "correct"
+    },
+    {
+     "field": "warning_bold",
+     "status": "pass",
+     "message": "\u201cGOVERNMENT WARNING:\u201d is in bold type. The heading letters are 1.79 times as thick as the warning text.",
+     "found": null,
+     "outcome": "correct"
+    }
+   ],
+   "tampered": {
+    "brand_name": "flagged",
+    "alcohol_content": "caught",
+    "net_contents": "caught"
+   }
+  },
+  {
+   "ttb_id": "26149001000884",
+   "brand": "SOMAR",
+   "type": "wine",
+   "overall": "review",
+   "elapsed_ms": 2950,
+   "tampered_elapsed_ms": 3000,
+   "engines": [
+    "ocr:enhanced",
+    "ocr:layout",
+    "ocr:rotate-90",
+    "ocr:standard",
+    "ocr:warning"
+   ],
+   "checks": [
+    {
+     "field": "brand_name",
+     "status": "pass",
+     "message": "The label and the application are the same.",
+     "found": "SOMAR",
+     "outcome": "correct"
+    },
+    {
+     "field": "class_type",
+     "status": "pass",
+     "message": "The text is the same. Only the capital letters are different. The label shows \u201cRED WINE\u201d.",
+     "found": "RED WINE",
+     "outcome": "correct"
+    },
+    {
+     "field": "alcohol_content",
+     "status": "pass",
+     "message": "The label shows the same value: 13.5% alcohol by volume.",
+     "found": "13.5%",
+     "outcome": "correct"
+    },
+    {
+     "field": "net_contents",
+     "status": "pass",
+     "message": "The label shows the same value: 750ML.",
+     "found": "750ML",
+     "outcome": "correct"
+    },
+    {
+     "field": "bottler",
+     "status": "review",
+     "message": "The tool did not find this text on the label. The nearest text is \u201cSHOULD VINEYARDS MEDFORD, OREGON\u201d.",
+     "found": "SHOULD VINEYARDS MEDFORD, OREGON",
+     "outcome": "false review"
+    },
+    {
+     "field": "warning_text",
+     "status": "review",
+     "message": "The text is almost the same as the required statement. Compare these items. \u201cAccording to\u201d read as \u201cADCOROING T0\u201d. \u201cGeneral,\u201d read as \u201cGENERA,\u201d. \u201cnot\u201d read as \u201cHOT\u201d. The difference can be a reading error.",
+     "found": "GOVERNMENT WARNING: (1) ADCOROING T0 THE SURGEON GENERA, WOMEN SHOULD HOT DRINK ALCOHOLIC BEVERAGES DURING PREGNANCY BECAUSE OF THE RISK OF BIRTH DEFECTS. (2) CCNSUMPTICN OF ALOOHCLIC BEVERAGES IMPARS YOUR ABILITY TO DRIVE A CAR OR OPERATE MACHINERY, AND MAY CAUSE HEALTH PROBLEMS.",
+     "outcome": "false review"
+    },
+    {
+     "field": "warning_caps",
+     "status": "pass",
+     "message": "\u201cGOVERNMENT WARNING:\u201d is in capital letters.",
+     "found": "GOVERNMENT WARNING:",
+     "outcome": "correct"
+    },
+    {
+     "field": "warning_bold",
+     "status": "pass",
+     "message": "\u201cGOVERNMENT WARNING:\u201d is in bold type. The heading letters are 1.21 times as thick as the warning text.",
+     "found": null,
+     "outcome": "correct"
+    }
+   ],
+   "tampered": {
+    "brand_name": "flagged",
+    "alcohol_content": "flagged",
+    "net_contents": "flagged"
+   }
+  },
+  {
+   "ttb_id": "26182001000156",
+   "brand": "D2",
+   "type": "wine",
+   "overall": "review",
+   "elapsed_ms": 3162,
+   "tampered_elapsed_ms": 3114,
+   "engines": [
+    "ocr:binarized",
+    "ocr:enhanced",
+    "ocr:enhanced-gray",
+    "ocr:layout",
+    "ocr:rotate-270",
+    "ocr:rotate-90",
+    "ocr:standard",
+    "ocr:warning"
+   ],
+   "checks": [
+    {
+     "field": "brand_name",
+     "status": "review",
+     "message": "The tool did not find this text on the label. The font can be decorative, or the text can be hard to read. Examine the label.",
+     "found": null,
+     "outcome": "false review"
+    },
+    {
+     "field": "class_type",
+     "status": "pass",
+     "message": "The text is the same. Only the capital letters are different. The label shows \u201cRED WINE\u201d.",
+     "found": "RED WINE",
+     "outcome": "correct"
+    },
+    {
+     "field": "alcohol_content",
+     "status": "review",
+     "message": "The tool did not find an alcohol content statement on the label.",
+     "found": null,
+     "outcome": "false review"
+    },
+    {
+     "field": "net_contents",
+     "status": "review",
+     "message": "The label shows 780 ml. The application shows 750 mL. Only one reading of the label shows this. The scanner can make reading errors. Examine the label.",
+     "found": "780 ml",
+     "outcome": "false review"
+    },
+    {
+     "field": "bottler",
+     "status": "pass",
+     "message": "The label and the application are the same.",
+     "found": "Sub Rosa Imports, Stilwell, KS",
+     "outcome": "correct"
+    },
+    {
+     "field": "country_of_origin",
+     "status": "pass",
+     "message": "The label and the application are the same.",
+     "found": "Chile",
+     "outcome": "correct"
+    },
+    {
+     "field": "warning_text",
+     "status": "review",
+     "message": "The text is almost the same as the required statement. Compare these items. \u201c(1)\u201d read as \u201cuy\u201d. \u201cbeverages\u201d read as \u201cVERAGES\u201d. Punctuation \u201cdefects.\u201d read as \u201cDEFECTS,\u201d. The difference can be a reading error.",
+     "found": "GOVERNMENT WARNING uy ACCORDING TO THE SURGEON GENERAL, WOMEN SHOULD NOT DRINK ALCOHOLIC VERAGES DURING PREGNANCY BECAUSE OF THE RISK OF BIRTH DEFECTS, ising (QF ALCOHOLIC BEVERAGES IMPAIRS YOUR ABILITY 10 DRIVE A CAR OPERATE MACHINERY, AND MAY CAUSE HEALTH PROBLEMS,",
+     "outcome": "false review"
+    },
+    {
+     "field": "warning_caps",
+     "status": "review",
+     "message": "The heading is in capital letters, but the tool did not find the colon after \u201cGOVERNMENT WARNING\u201d.",
+     "found": "GOVERNMENT WARNING",
+     "outcome": "false review"
+    },
+    {
+     "field": "warning_bold",
+     "status": "pass",
+     "message": "\u201cGOVERNMENT WARNING:\u201d is in bold type. The heading letters are 1.46 times as thick as the warning text.",
+     "found": null,
+     "outcome": "correct"
+    }
+   ],
+   "tampered": {
+    "brand_name": "flagged",
+    "alcohol_content": "flagged",
+    "net_contents": "flagged"
+   }
+  },
+  {
+   "ttb_id": "26146001000515",
+   "brand": "ESSENCE",
+   "type": "wine",
+   "overall": "review",
+   "elapsed_ms": 3508,
+   "tampered_elapsed_ms": 3651,
+   "engines": [
+    "ocr:binarized",
+    "ocr:enhanced",
+    "ocr:enhanced-gray",
+    "ocr:layout",
+    "ocr:rotate-270",
+    "ocr:rotate-90",
+    "ocr:standard",
+    "ocr:warning"
+   ],
+   "checks": [
+    {
+     "field": "brand_name",
+     "status": "review",
+     "message": "The tool did not find this text on the label. The nearest text is \u201cEuence\u201d.",
+     "found": "Euence",
+     "outcome": "false review"
+    },
+    {
+     "field": "class_type",
+     "status": "review",
+     "message": "The letters are the same, but the accent marks are different. The label shows \u201cSPARKLING ROSE WINE\u201d. Make sure that this difference is permitted.",
+     "found": "SPARKLING ROSE WINE",
+     "outcome": "false review"
+    },
+    {
+     "field": "alcohol_content",
+     "status": "pass",
+     "message": "The label shows the same value: 12.5% alcohol by volume.",
+     "found": "12,5%",
+     "outcome": "correct"
+    },
+    {
+     "field": "net_contents",
+     "status": "pass",
+     "message": "The label shows the same value: 750 ML.",
+     "found": "750 ML",
+     "outcome": "correct"
+    },
+    {
+     "field": "bottler",
+     "status": "pass",
+     "message": "The text is the same. Only the capital letters are different. The label shows \u201cSPECIALTY CELLARS, SANTA FE SPRINGS, CA\u201d.",
+     "found": "SPECIALTY CELLARS, SANTA FE SPRINGS, CA",
+     "outcome": "correct"
+    },
+    {
+     "field": "country_of_origin",
+     "status": "review",
+     "message": "The label shows \u201cbottled in Ital\u201d. The application shows France. Only one reading of the label shows this. The scanner can make reading errors. Examine the label.",
+     "found": "bottled in Ital",
+     "outcome": "correct"
+    },
+    {
+     "field": "warning_text",
+     "status": "review",
+     "message": "The text is almost the same as the required statement. Compare these items. \u201c(1)\u201d read as \u201cAW\u201d. \u201c(2)\u201d read as \u201c4\u201d. The difference can be a reading error.",
+     "found": "GOVERNMENT WARNING: AW ACCORDING TO THE SURGEON GENERAL, WOMEN SHOULD NOT DRINK ALCOHOLIC BEVERAGES DURING PREGNANCY BECAUSE OF THE RISK OF BIRTH DEFECTS. 4 CONSUMPTION OF ALCOHOLIC BEVERA- GES IMPAIRS YOUR ABILITY TO DRIVE A CAR OR OPERATE MACHINERY, AND MAY CAUSE HEALTH PROBLEMS.",
+     "outcome": "false review"
+    },
+    {
+     "field": "warning_caps",
+     "status": "pass",
+     "message": "\u201cGOVERNMENT WARNING:\u201d is in capital letters.",
+     "found": "GOVERNMENT WARNING:",
+     "outcome": "correct"
+    },
+    {
+     "field": "warning_bold",
+     "status": "review",
+     "message": "The tool did not measure the type weight of \u201cGOVERNMENT WARNING:\u201d. Examine the label to make sure that the heading is in bold type.",
+     "found": null,
+     "outcome": "false review"
+    }
+   ],
+   "tampered": {
+    "brand_name": "flagged",
+    "alcohol_content": "caught",
+    "net_contents": "caught"
+   }
+  },
+  {
+   "ttb_id": "26162001000211",
+   "brand": "REVOLVER BREWING",
+   "type": "beer",
+   "overall": "review",
+   "elapsed_ms": 3337,
+   "tampered_elapsed_ms": 3115,
+   "engines": [
+    "ocr:binarized",
+    "ocr:enhanced",
+    "ocr:layout",
+    "ocr:rotate-270",
+    "ocr:rotate-90",
+    "ocr:standard"
+   ],
+   "checks": [
+    {
+     "field": "brand_name",
+     "status": "pass",
+     "message": "The label and the application are the same.",
+     "found": "REVOLVER BREWING",
+     "outcome": "correct"
+    },
+    {
+     "field": "class_type",
+     "status": "pass",
+     "message": "The label and the application are the same.",
+     "found": "India Pale Ale",
+     "outcome": "correct"
+    },
+    {
+     "field": "alcohol_content",
+     "status": "pass",
+     "message": "The label shows the same value: 6.6% alcohol by volume.",
+     "found": "6.6%",
+     "outcome": "correct"
+    },
+    {
+     "field": "net_contents",
+     "status": "review",
+     "message": "The tool did not find the net contents on the label, for example \u201c750 mL\u201d.",
+     "found": null,
+     "outcome": "false review"
+    },
+    {
+     "field": "bottler",
+     "status": "pass",
+     "message": "The text is the same. The label uses the full word for an abbreviation: \u201cRevolver Brewing 3 Littleton, CO\u201d.",
+     "found": "Revolver Brewing 3 Littleton, CO",
+     "outcome": "correct"
+    },
+    {
+     "field": "warning_text",
+     "status": "review",
+     "message": "The tool cannot read the government warning. The warning is not on the label, or it is too small or not clear.",
+     "found": null,
+     "outcome": "false review"
+    }
+   ],
+   "tampered": {
+    "brand_name": "flagged",
+    "alcohol_content": "flagged",
+    "net_contents": "flagged"
+   }
+  },
+  {
+   "ttb_id": "26169001000348",
+   "brand": "TWO LANTERNS",
+   "type": "beer",
+   "overall": "review",
+   "elapsed_ms": 2967,
+   "tampered_elapsed_ms": 2951,
+   "engines": [
+    "ocr:enhanced",
+    "ocr:layout",
+    "ocr:rotate-90",
+    "ocr:standard",
+    "ocr:warning"
+   ],
+   "checks": [
+    {
+     "field": "brand_name",
+     "status": "pass",
+     "message": "The label and the application are the same.",
+     "found": "TWO LANTERNS",
+     "outcome": "correct"
+    },
+    {
+     "field": "class_type",
+     "status": "pass",
+     "message": "The label and the application are the same.",
+     "found": "India Pale Ale",
+     "outcome": "correct"
+    },
+    {
+     "field": "alcohol_content",
+     "status": "pass",
+     "message": "The label shows the same value: 6.8% alcohol by volume.",
+     "found": "6.8%",
+     "outcome": "correct"
+    },
+    {
+     "field": "net_contents",
+     "status": "review",
+     "message": "The tool did not find the net contents on the label, for example \u201c750 mL\u201d.",
+     "found": null,
+     "outcome": "correct"
+    },
+    {
+     "field": "bottler",
+     "status": "pass",
+     "message": "The text is the same. Only the punctuation or the spaces are different. The label shows \u201cTWO LANTERNS BREWING CO. BOSTON, MA\u201d.",
+     "found": "TWO LANTERNS BREWING CO. BOSTON, MA",
+     "outcome": "correct"
+    },
+    {
+     "field": "warning_text",
+     "status": "review",
+     "message": "The text is almost the same as the required statement. Compare these items. \u201c(1) According to the Surgeon\u201d read as \u201cfof HE E ___\u201d. \u201calcoholic\u201d read as \u201cABCOH@LI a\u201d. \u201cbecause of the risk\u201d read as \u201cBE@AUSIQOF FE RIS\u201d. The difference can be a reading error.",
+     "found": "GOVERNMENT WARNING: fof HE E ___ GENERAL, WOMEN SHOULD NOT DRINK ABCOH@LI a BEVERAGES DURING PREGNANCY BE@AUSIQOF FE RIS \u2018OF BIRTH DEFECTS. (2) CONSUMPTION(F ASCOHOL % BEVERAGES IMPAIRS YOURJABILIY TO DRIVE A \u201cYy CAR OR OPERATE MA@HINERY, AND MAY CABSE IN Se. HFAITH PROBI FMS.",
+     "outcome": "false review"
+    },
+    {
+     "field": "warning_caps",
+     "status": "pass",
+     "message": "\u201cGOVERNMENT WARNING:\u201d is in capital letters.",
+     "found": "GOVERNMENT WARNING:",
+     "outcome": "correct"
+    },
+    {
+     "field": "warning_bold",
+     "status": "pass",
+     "message": "\u201cGOVERNMENT WARNING:\u201d is in bold type. The heading letters are 1.33 times as thick as the warning text.",
+     "found": null,
+     "outcome": "correct"
+    }
+   ],
+   "tampered": {
+    "brand_name": "flagged",
+    "alcohol_content": "flagged"
+   }
+  },
+  {
+   "ttb_id": "26225001000201",
+   "brand": "FIVE BOROUGHS",
+   "type": "beer",
+   "overall": "review",
+   "elapsed_ms": 3295,
+   "tampered_elapsed_ms": 3304,
+   "engines": [
+    "ocr:binarized",
+    "ocr:enhanced",
+    "ocr:layout",
+    "ocr:rotate-270",
+    "ocr:rotate-90",
+    "ocr:standard",
+    "ocr:warning"
+   ],
+   "checks": [
+    {
+     "field": "brand_name",
+     "status": "pass",
+     "message": "The label and the application are the same.",
+     "found": "FIVE BOROUGHS",
+     "outcome": "correct"
+    },
+    {
+     "field": "class_type",
+     "status": "pass",
+     "message": "The text is the same. Only the capital letters are different. The label shows \u201cPILSNER\u201d.",
+     "found": "PILSNER",
+     "outcome": "correct"
+    },
+    {
+     "field": "alcohol_content",
+     "status": "pass",
+     "message": "The label shows the same value: 5% alcohol by volume.",
+     "found": "5.0%",
+     "outcome": "correct"
+    },
+    {
+     "field": "net_contents",
+     "status": "pass",
+     "message": "The label shows the same value: 355ML. 355ML is the same as 354.882 mL.",
+     "found": "355ML",
+     "outcome": "correct"
+    },
+    {
+     "field": "bottler",
+     "status": "pass",
+     "message": "The text is the same. Only the capital letters are different. The label shows \u201cFIVE BOROUGHS BREWING CO., BOSTON, MA\u201d.",
+     "found": "FIVE BOROUGHS BREWING CO., BOSTON, MA",
+     "outcome": "correct"
+    },
+    {
+     "field": "warning_text",
+     "status": "pass",
+     "message": "The warning is word-for-word the same as the required statement.",
+     "found": "GOVERNMENT WARNING: (1) ACCORDING TO THE SURGEON GENERAL, WOMEN SHOULD NOT DRINK ALCOHOLIC BEVERAGES DURING PREGNANCY BECAUSE OF THE RISK OF BIRTH DEFECTS. (2) CONSUMPTION OF ALCOHOLIC BEVERAGES IMPAIRS YOUR ABILITY TO DRIVE A CAR OR OPERATE MACHINERY, AND MAY CAUSE HEALTH PROBLEMS.",
+     "outcome": "correct"
+    },
+    {
+     "field": "warning_caps",
+     "status": "pass",
+     "message": "\u201cGOVERNMENT WARNING:\u201d is in capital letters.",
+     "found": "GOVERNMENT WARNING:",
+     "outcome": "correct"
+    },
+    {
+     "field": "warning_bold",
+     "status": "review",
+     "message": "The tool measured \u201cGOVERNMENT WARNING:\u201d as not bold. Bold type is required. The heading letters and the warning text are almost the same thickness (1.00 times). Examine the label.",
+     "found": null,
+     "outcome": "false review"
+    }
+   ],
+   "tampered": {
+    "brand_name": "flagged",
+    "alcohol_content": "flagged",
+    "net_contents": "flagged"
+   }
+  },
+  {
+   "ttb_id": "26259001000500",
+   "brand": "NEW BELGIUM",
+   "type": "beer",
+   "overall": "pass",
+   "elapsed_ms": 2529,
+   "tampered_elapsed_ms": 3338,
+   "engines": [
+    "ocr:binarized",
+    "ocr:enhanced",
+    "ocr:layout",
+    "ocr:rotate-270",
+    "ocr:rotate-90",
+    "ocr:standard",
+    "ocr:warning"
+   ],
+   "checks": [
+    {
+     "field": "brand_name",
+     "status": "pass",
+     "message": "The label and the application are the same.",
+     "found": "NEW BELGIUM",
+     "outcome": "correct"
+    },
+    {
+     "field": "class_type",
+     "status": "pass",
+     "message": "The text is the same. Only the capital letters are different. The label shows \u201cBELGIAN STYLE LAGER\u201d.",
+     "found": "BELGIAN STYLE LAGER",
+     "outcome": "correct"
+    },
+    {
+     "field": "alcohol_content",
+     "status": "pass",
+     "message": "The label shows the same value: 4.8% alcohol by volume.",
+     "found": "4.8%",
+     "outcome": "correct"
+    },
+    {
+     "field": "net_contents",
+     "status": "pass",
+     "message": "The label shows the same value: 355mL. 355mL is the same as 354.882 mL.",
+     "found": "355mL",
+     "outcome": "correct"
+    },
+    {
+     "field": "bottler",
+     "status": "pass",
+     "message": "The text is the same. Only the capital letters are different. The label shows \u201cNEW BELGIUM BREWING COMPANY, FORT COLLINS, CO\u201d.",
+     "found": "NEW BELGIUM BREWING COMPANY, FORT COLLINS, CO",
+     "outcome": "correct"
+    },
+    {
+     "field": "warning_text",
+     "status": "pass",
+     "message": "The warning is word-for-word the same as the required statement.",
+     "found": "GOVERNMENT WARNING: (1) ACCORDING TO THE SURGEON GENERAL, WOMEN SHOULD NOT DRINK ALCOHOLIC BEVERAGES DURING PREGNANCY BECAUSE OF THE RISK OF BIRTH DEFECTS. (2) CONSUMPTION OF ALCOHOLIC BEVERAGES IMPAIRS YOUR ABILITY TO DRIVE A CAR OR OPERATE MACHINERY, AND MAY CAUSE HEALTH PROBLEMS.",
+     "outcome": "correct"
+    },
+    {
+     "field": "warning_caps",
+     "status": "pass",
+     "message": "\u201cGOVERNMENT WARNING:\u201d is in capital letters.",
+     "found": "GOVERNMENT WARNING:",
+     "outcome": "correct"
+    },
+    {
+     "field": "warning_bold",
+     "status": "pass",
+     "message": "\u201cGOVERNMENT WARNING:\u201d is in bold type. The heading letters are 1.50 times as thick as the warning text.",
+     "found": null,
+     "outcome": "correct"
+    }
+   ],
+   "tampered": {
+    "brand_name": "flagged",
+    "alcohol_content": "caught",
+    "net_contents": "caught"
+   }
+  },
+  {
+   "ttb_id": "26242001000074",
+   "brand": "LIDSKOE",
+   "type": "beer",
+   "overall": "pass",
+   "elapsed_ms": 1353,
+   "tampered_elapsed_ms": 3639,
+   "engines": [
+    "ocr:layout",
+    "ocr:standard",
+    "ocr:warning"
+   ],
+   "checks": [
+    {
+     "field": "brand_name",
+     "status": "pass",
+     "message": "The label and the application are the same.",
+     "found": "LIDSKOE",
+     "outcome": "correct"
+    },
+    {
+     "field": "class_type",
+     "status": "pass",
+     "message": "The text is the same. Only the capital letters are different. The label shows \u201cPALE PASTEURIZED BEER\u201d.",
+     "found": "PALE PASTEURIZED BEER",
+     "outcome": "correct"
+    },
+    {
+     "field": "alcohol_content",
+     "status": "pass",
+     "message": "The label shows the same value: 4.2% alcohol by volume.",
+     "found": "4.2%",
+     "outcome": "correct"
+    },
+    {
+     "field": "net_contents",
+     "status": "pass",
+     "message": "The label shows the same value: 500 mL.",
+     "found": "500 mL",
+     "outcome": "correct"
+    },
+    {
+     "field": "bottler",
+     "status": "pass",
+     "message": "The label shows the same name and address: \u201cFRS GROUP INC \u2026 FORT LAUDERDALE, FLORIDA\u201d.",
+     "found": "FRS GROUP INC \u2026 FORT LAUDERDALE, FLORIDA",
+     "outcome": "correct"
+    },
+    {
+     "field": "country_of_origin",
+     "status": "pass",
+     "message": "The text is the same. Only the capital letters are different. The label shows \u201cBELARUS\u201d.",
+     "found": "BELARUS",
+     "outcome": "correct"
+    },
+    {
+     "field": "warning_text",
+     "status": "pass",
+     "message": "The warning is word-for-word the same as the required statement.",
+     "found": "GOVERNMENT WARNING: (1) According to the Surgeon General, women should not drink alcoholic beverages during pregnancy because of the risk of birth defects. (2) Consumption of alcoholic beverages impairs your ability to drive a car or operate machinery, and may cause health problems.",
+     "outcome": "correct"
+    },
+    {
+     "field": "warning_caps",
+     "status": "pass",
+     "message": "\u201cGOVERNMENT WARNING:\u201d is in capital letters.",
+     "found": "GOVERNMENT WARNING:",
+     "outcome": "correct"
+    },
+    {
+     "field": "warning_bold",
+     "status": "pass",
+     "message": "\u201cGOVERNMENT WARNING:\u201d is in bold type. The heading letters are 1.79 times as thick as the warning text.",
+     "found": null,
+     "outcome": "correct"
+    }
+   ],
+   "tampered": {
+    "brand_name": "flagged",
+    "alcohol_content": "caught",
+    "net_contents": "caught"
+   }
+  },
+  {
+   "ttb_id": "26223001000596",
+   "brand": "CANDYMAKER",
+   "type": "beer",
+   "overall": "review",
+   "elapsed_ms": 3027,
+   "tampered_elapsed_ms": 3082,
+   "engines": [
+    "ocr:enhanced",
+    "ocr:layout",
+    "ocr:rotate-270",
+    "ocr:rotate-90",
+    "ocr:standard",
+    "ocr:warning"
+   ],
+   "checks": [
+    {
+     "field": "brand_name",
+     "status": "pass",
+     "message": "The label and the application are the same.",
+     "found": "CANDYMAKER",
+     "outcome": "correct"
+    },
+    {
+     "field": "class_type",
+     "status": "pass",
+     "message": "The text is the same. Only the capital letters are different. The label shows \u201cSTOUT\u201d.",
+     "found": "STOUT",
+     "outcome": "correct"
+    },
+    {
+     "field": "alcohol_content",
+     "status": "pass",
+     "message": "The label shows the same value: 7% alcohol by volume.",
+     "found": "7%",
+     "outcome": "correct"
+    },
+    {
+     "field": "net_contents",
+     "status": "pass",
+     "message": "The label shows the same value: 15.5 a \u201c\u00a5 GALLONS.",
+     "found": "15.5 a \u201c\u00a5 GALLONS",
+     "outcome": "correct"
+    },
+    {
+     "field": "bottler",
+     "status": "pass",
+     "message": "The label shows the same name and address: \u201cWIDOWMAKER BREWING \u2026 BRAINTREE, MA\u201d.",
+     "found": "WIDOWMAKER BREWING \u2026 BRAINTREE, MA",
+     "outcome": "correct"
+    },
+    {
+     "field": "warning_text",
+     "status": "review",
+     "message": "The text is almost the same as the required statement. Compare these items. Extra marks \u201c7\u201d. Extra marks \u201c*\u201d. Punctuation \u201cdefects.\u201d read as \u201cDEFECTS\u201d. The difference can be a reading error.",
+     "found": "GOVERNMENT WARNING: (1) ACCORDING TO THE SURGEON 7 GENERAL, WOMEN SHOULD NOT DRINK ALCOHOLIC BEVERAGES * DURING PREGNANCY BECAUSE OF THE RISK OF BIRTH DEFECTS + (2) CONSUMPTION OF ALCOHOLIC + BEVERAGES IMPAIRS YOUR ABILITY TO DRIVE A CAR OR OPERATE MACHINERY, AND MAY CAUSE HEALTH PROBLEMS.",
+     "outcome": "false review"
+    },
+    {
+     "field": "warning_caps",
+     "status": "pass",
+     "message": "\u201cGOVERNMENT WARNING:\u201d is in capital letters.",
+     "found": "GOVERNMENT WARNING:",
+     "outcome": "correct"
+    },
+    {
+     "field": "warning_bold",
+     "status": "pass",
+     "message": "\u201cGOVERNMENT WARNING:\u201d is in bold type. The heading letters are 1.34 times as thick as the warning text.",
+     "found": null,
+     "outcome": "correct"
+    }
+   ],
+   "tampered": {
+    "brand_name": "flagged",
+    "alcohol_content": "caught",
+    "net_contents": "flagged"
+   }
+  }
+ ]
+}

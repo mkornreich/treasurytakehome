@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Browser-only evaluation</title>
+</head>
+<body>
+  <pre id="log">Loading the text scanner…</pre>
+  <script type="module">
+    // Served by eval/run_browser_eval.py. Checks every label with the page's browser-only engine
+    // (app/static/local/engine.js), exactly as the page does when the server does not answer,
+    // and posts each result back as soon as it is ready.
+    import * as engine from "/static/local/engine.js";
+
+    const log = (line) => { document.getElementById("log").textContent += `\n${line}`; };
+    const post = (path, data) => fetch(path, { method: "POST", body: JSON.stringify(data) });
+    const params = new URLSearchParams(location.search);
+    const budgetMs = params.has("budget") ? Number(params.get("budget")) : undefined;
+
+    try {
+      const jobs = await (await fetch("/jobs.json")).json();
+      await engine.warmUp();
+      for (const job of jobs) {
+        try {
+          const files = await Promise.all(job.files.map(async (url) => {
+            const blob = await (await fetch(url)).blob();
+            return new File([blob], url.split("/").pop(), { type: blob.type });
+          }));
+          const check = async (application) => {
+            const started = performance.now();
+            const session = new engine.Session(files);
+            await session.firstRound();
+            const result = await session.finish(application, budgetMs === undefined ? {} : { budgetMs });
+            result.elapsed_ms = Math.round(performance.now() - started);
+            return result;
+          };
+          const truthful = await check(job.truthful);
+          const tampered = await check(job.tampered);
+          await post("/result", { ttb_id: job.ttb_id, truthful, tampered });
+          log(`${job.ttb_id}: ${truthful.headline} (${truthful.elapsed_ms} ms)`);
+        } catch (err) {
+          await post("/result", { ttb_id: job.ttb_id, error: String(err && err.stack || err) });
+        }
+      }
+      await post("/done", { hardwareConcurrency: navigator.hardwareConcurrency, userAgent: navigator.userAgent });
+    } catch (err) {
+      await post("/done", { error: String(err && err.stack || err) });
+    }
+  </script>
+</body>
+</html>

@@ -79,39 +79,51 @@ def classify(status: str, allowed: set[str]) -> str:
     return "missed" if status == "pass" else "correct"
 
 
+def label_files(case: dict) -> list[Path] | None:
+    """The label images of one case, or None (with a note) when they have not been downloaded."""
+    folder = HERE / "real_labels" / case["ttb_id"]
+    files = [folder / name for name in case["label_files"].split(";")]
+    if not all(f.exists() for f in files):
+        print(f"skip {case['ttb_id']}: images missing (run eval/fetch_cola.py)", file=sys.stderr)
+        return None
+    return files
+
+
+def score(case: dict, truthful: dict, tampered: dict, changes: dict) -> dict:
+    """Grade one label's two runs. `truthful` and `tampered` are verification results as JSON
+    (from the server pipeline, or from the browser in run_browser_eval.py)."""
+    checks = []
+    for c in truthful["checks"]:
+        allowed = case["expect_map"].get(c["field"], {"pass"})
+        checks.append({"field": c["field"], "status": c["status"], "message": c["message"],
+                       "found": c["found"], "outcome": classify(c["status"], allowed)})
+    caught = {}
+    for field in changes:
+        status = next((c["status"] for c in tampered["checks"] if c["field"] == field), "missing")
+        caught[field] = {"pass": "missed", "review": "flagged", "fail": "caught"}.get(status, status)
+    result = {
+        "ttb_id": case["ttb_id"], "brand": case["brand_name"], "type": case["beverage_type"],
+        "overall": truthful["overall"], "elapsed_ms": truthful["elapsed_ms"],
+        "tampered_elapsed_ms": tampered["elapsed_ms"], "engines": truthful["engines"],
+        "checks": checks, "tampered": caught,
+    }
+    bad = [f"{c['field']}:{c['status']}" for c in checks if c["outcome"] != "correct"]
+    print(f"{case['ttb_id']} {case['brand_name'][:22]:22} {truthful['elapsed_ms']:5} ms  "
+          f"{'ok' if not bad else ' '.join(bad)}  | tampered: {caught}", flush=True)
+    return result
+
+
 async def run(cases: list[dict], verifier: Verifier) -> list[dict]:
     results = []
     for case in cases:
-        folder = HERE / "real_labels" / case["ttb_id"]
-        files = [folder / name for name in case["label_files"].split(";")]
-        if not all(f.exists() for f in files):
-            print(f"skip {case['ttb_id']}: images missing (run eval/fetch_cola.py)", file=sys.stderr)
+        files = label_files(case)
+        if files is None:
             continue
         uploads = [f.read_bytes() for f in files]
-
-        truthful = await verifier.verify(uploads, application(case))
-        checks = []
-        for c in truthful.checks:
-            allowed = case["expect_map"].get(c.field, {"pass"})
-            checks.append({"field": c.field, "status": c.status.value, "message": c.message,
-                           "found": c.found, "outcome": classify(c.status.value, allowed)})
-
         changes = tampered_values(case)
+        truthful = await verifier.verify(uploads, application(case))
         tampered = await verifier.verify(uploads, application(case, **changes))
-        caught = {}
-        for field in changes:
-            status = next((c.status.value for c in tampered.checks if c.field == field), "missing")
-            caught[field] = {"pass": "missed", "review": "flagged", "fail": "caught"}.get(status, status)
-
-        results.append({
-            "ttb_id": case["ttb_id"], "brand": case["brand_name"], "type": case["beverage_type"],
-            "overall": truthful.overall.value, "elapsed_ms": truthful.elapsed_ms,
-            "tampered_elapsed_ms": tampered.elapsed_ms, "engines": truthful.engines,
-            "checks": checks, "tampered": caught,
-        })
-        bad = [f"{c['field']}:{c['status']}" for c in checks if c["outcome"] != "correct"]
-        print(f"{case['ttb_id']} {case['brand_name'][:22]:22} {truthful.elapsed_ms:5} ms  "
-              f"{'ok' if not bad else ' '.join(bad)}  | tampered: {caught}", flush=True)
+        results.append(score(case, truthful.model_dump(mode="json"), tampered.model_dump(mode="json"), changes))
     return results
 
 

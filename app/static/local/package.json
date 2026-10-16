@@ -1,0 +1,4 @@
+{
+  "description": "Lets Node load these browser modules for tests/test_local_parity.py.",
+  "type": "module"
+}

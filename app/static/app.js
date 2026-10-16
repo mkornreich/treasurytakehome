@@ -14,6 +14,9 @@ const RESIZE_OVER_BYTES = 2.5 * 1024 * 1024;
 const BATCH_CONCURRENCY = 4;
 const IMAGE_EXT = /\.(jpe?g|png|webp|gif|bmp|tiff?)$/i;
 const NO_CONNECTION = "The connection to the server failed.";
+const SERVER_RETRY_MS = 60_000;
+// ?mode=local: do all the work in the browser. ?mode=server: send every picture to the server.
+const MODE = new URLSearchParams(location.search).get("mode");
 
 const $ = (sel, root = document) => root.querySelector(sel);
 const $$ = (sel, root = document) => [...root.querySelectorAll(sel)];
@@ -97,15 +100,15 @@ async function prepareImage(file) {
   }
 }
 
-async function postVerify(files, application) {
-  const form = new FormData();
-  for (const f of files) form.append("images", f, f.name);
-  form.append("application", JSON.stringify(application));
+/** The server did not answer, or has no API (a static copy of the page): the browser can do the work. */
+class ServerUnavailable extends Error {}
+
+async function post(url, body) {
   let response;
   try {
-    response = await fetch("/api/verify", { method: "POST", body: form });
+    response = await fetch(url, { method: "POST", body, headers: typeof body === "string" ? { "Content-Type": "application/json" } : {} });
   } catch {
-    throw new Error(`${NO_CONNECTION} Make sure that your network connection operates. Then try again.`);
+    throw new ServerUnavailable(`${NO_CONNECTION} Make sure that your network connection operates. Then try again.`);
   }
   if (!response.ok) {
     let detail = `The server did not complete the check of this label (error ${response.status}). Try again.`;
@@ -113,15 +116,133 @@ async function postVerify(files, application) {
       const body = await response.json();
       if (typeof body.detail === "string") detail = body.detail;
     } catch { /* keep the generic message */ }
+    if (response.status >= 500 || response.status === 404 || response.status === 405) throw new ServerUnavailable(detail);
     throw new Error(detail);
   }
   return response.json();
 }
 
+function postVerify(files, application) {
+  const form = new FormData();
+  for (const f of files) form.append("images", f, f.name);
+  form.append("application", JSON.stringify(application));
+  return post("/api/verify", form);
+}
+
+// ---------------------------------------------------------------- where the work is done
+
+const server = { up: true, retryAt: 0, config: {} };
+const serverUsable = () => MODE !== "local" && (server.up || performance.now() > server.retryAt);
+let localEngine = null;
+
+/** The text scanner in the browser (app/static/local/engine.js), or null when it cannot run here. */
+function browserScanner() {
+  if (MODE === "server" || (server.up && server.config.browser_ocr === false)) return Promise.resolve(null);
+  localEngine ??= import("./local/engine.js")
+    .then((engine) => (engine.supported() ? engine : null))
+    .catch(() => null);
+  return localEngine;
+}
+
+/** Start loading the browser scanner as soon as pictures are added, so it is ready at "Check". */
+function warmUpScanner() {
+  browserScanner().then((engine) => engine?.warmUp().catch(() => {}));
+}
+
+/**
+ * Check one application. The browser reads the pictures first and the server applies the rules.
+ * If that does not confirm every item, the server reads the pictures again with more effort.
+ * If the server does not answer, the browser does all of the work.
+ */
+async function checkLabel(files, application, { batch = false } = {}) {
+  const started = performance.now();
+  const prepared = await Promise.all(files.map(prepareImage));
+  const engine = await browserScanner();
+  const useServer = serverUsable();
+  let session = null;
+  let result = null;
+  let where = "server";
+  let notice = null;
+
+  if (engine && (!useServer || engine.isReady())) {
+    try {
+      session = new engine.Session(prepared);
+      await session.firstRound();
+    } catch (err) {
+      console.warn("The browser could not read the label", err);
+      session = null;
+    }
+  }
+  if (useServer) {
+    try {
+      if (session) {
+        const answer = await post("/api/verify-readings", JSON.stringify({ application, ...session.readings() }));
+        if (answer.overall === "pass") [result, where] = [answer, "browser"];
+      }
+      result ??= await postVerify(prepared, application);
+      server.up = true;
+    } catch (err) {
+      if (!(err instanceof ServerUnavailable) || !engine) throw err;
+      server.up = false;
+      server.retryAt = performance.now() + SERVER_RETRY_MS;
+      notice = "The server did not answer. The browser examined the label.";
+      updateEngineNote();
+    }
+  }
+  if (!result) {
+    if (!engine) {
+      throw new Error("The server did not answer, and this browser cannot read labels by itself. "
+        + "Use a current version of Chrome, Edge, Firefox, or Safari, or try again later.");
+    }
+    if (!session) {
+      session = new engine.Session(prepared);
+      try {
+        await session.firstRound();
+      } catch {
+        throw new Error("The browser cannot open this picture. Use a JPG, PNG, or WEBP picture of the label.");
+      }
+    }
+    result = await session.finish(application, batch ? { budgetMs: Infinity } : {});
+    where = "browser";
+    if (notice) result.notices.unshift(notice);
+  }
+  result.where = where;
+  result.elapsed_ms = Math.round(performance.now() - started);
+  return { result, prepared };
+}
+
+// ---------------------------------------------------------------- larger picture
+
+const ZOOM_ICON = '<svg class="zoom-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="10" cy="10" r="6"/><path d="M14.5 14.5L20 20M10 7.5v5M7.5 10h5"/></svg>';
+/** Fit the picture on the screen, or show it at full size (scroll to see all of it). */
+function setFullSize(full) {
+  $(".picture-dialog-body").classList.toggle("full-size", full);
+  $("#picture-dialog-size").setAttribute("aria-pressed", String(full));
+}
+
+/** Show a picture as large as the screen permits. `highlights` are copies of the result boxes. */
+function showLarger(url, name, highlights = []) {
+  const dialog = $("#picture-dialog");
+  const picture = el("div", { class: "img-wrap" }, el("img", { src: url, alt: name }), highlights);
+  picture.addEventListener("click", () => setFullSize(!$(".picture-dialog-body").classList.contains("full-size")));
+  $("#picture-dialog-name").textContent = name;
+  $(".picture-dialog-body", dialog).replaceChildren(picture);
+  setFullSize(false);
+  dialog.showModal();
+}
+
+function setupPictureDialog() {
+  const dialog = $("#picture-dialog");
+  $("#picture-dialog-close").addEventListener("click", () => dialog.close());
+  $("#picture-dialog-size").addEventListener("click", (e) => setFullSize(e.currentTarget.getAttribute("aria-pressed") !== "true"));
+  dialog.addEventListener("click", (e) => { if (e.target === dialog) dialog.close(); }); // a click on the dark area
+}
+
 // ---------------------------------------------------------------- result view (shared)
 
 function engineText(result) {
-  return result.engines.some((e) => e.startsWith("vision")) ? "text scanner and AI reader" : "text scanner";
+  if (result.where === "browser") return "text scanner in your browser";
+  return result.engines.some((e) => e.startsWith("vision")) ? "text scanner and the AI reader on the server" : "text scanner on the server";
 }
 
 function renderDiff(diff) {
@@ -142,11 +263,16 @@ function renderDiff(diff) {
 function renderResult(container, result, files) {
   const checks = result.checks;
   const urls = files.map((f) => URL.createObjectURL(f));
-  const views = urls.map((url, i) =>
-    el("div", { class: "img-wrap", "data-image": i },
-      el("img", { src: url, alt: `Label picture ${i + 1}`, onerror: (e) => { e.target.alt = "The browser cannot show this type of file."; } }),
+  const enlarge = (i) => showLarger(urls[i], files[i].name, $$(".hl", views[i]).map((n) => n.cloneNode(true)));
+  const views = urls.map((url, i) => {
+    const zoom = el("button", { type: "button", class: "img-zoom", title: "Show a larger picture", "aria-label": `Show a larger picture: ${files[i].name}`, onclick: () => enlarge(i) });
+    zoom.innerHTML = ZOOM_ICON;
+    return el("div", { class: "img-wrap", "data-image": i },
+      el("img", { src: url, alt: `Label picture ${i + 1}`, onclick: () => enlarge(i), onerror: (e) => { e.target.alt = "The browser cannot show this type of file."; } }),
       files.length > 1 ? el("span", { class: "img-tag" }, `Picture ${i + 1}`) : null,
-    ));
+      zoom,
+    );
+  });
   const caption = el("figcaption", {}, "Click a result to see where it is on the label.");
 
   const show = (check) => {
@@ -168,40 +294,42 @@ function renderResult(container, result, files) {
   };
 
   let selected = null;
+  /** Highlight check i on the picture; `toggle` lets a second press take the highlight away. */
+  const choose = (i, toggle = true) => {
+    selected = toggle && selected === i ? null : i;
+    items.forEach((n, j) => {
+      n.classList.toggle("selected", j === selected);
+      $(".show-btn", n).setAttribute("aria-pressed", String(j === selected));
+    });
+    show(selected === null ? null : checks[selected]);
+  };
   const items = checks.map((check, i) => {
     const values = [];
     if (check.expected) values.push(el("dt", {}, check.field.startsWith("warning") ? "Required" : "Application"), el("dd", {}, check.expected));
     if (check.found && check.field !== "warning_text") values.push(el("dt", {}, "Label"), el("dd", {}, check.found));
-    const item = el("li", { class: `check ${check.status}`, tabindex: 0, role: "button", "aria-pressed": "false" },
-      el("div", { class: "check-head" }, badge(check.status), el("span", { class: "check-label" }, check.label)),
+    const item = el("li", { class: `check ${check.status}` },
+      el("div", { class: "check-head" }, badge(check.status), el("span", { class: "check-label" }, check.label),
+        el("button", { type: "button", class: "show-btn", "aria-pressed": "false", "aria-label": `Show on the label: ${check.label}`, onclick: () => choose(i) }, "Show on the label")),
       el("p", { class: "check-msg" }, check.message),
       values.length ? el("dl", { class: "check-values" }, values) : null,
       check.diff && check.status !== "pass" ? renderDiff(check.diff) : null,
     );
-    const choose = () => {
-      selected = selected === i ? null : i;
-      $$(".check", container).forEach((n, j) => {
-        n.classList.toggle("selected", j === selected);
-        n.setAttribute("aria-pressed", j === selected);
-      });
-      show(selected === null ? null : checks[selected]);
-    };
-    item.addEventListener("click", (e) => { if (!e.target.closest("summary")) choose(); });
-    item.addEventListener("keydown", (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); choose(); } });
+    // A click anywhere on the card does the same as its button (a larger target for the mouse).
+    item.addEventListener("click", (e) => { if (!e.target.closest("summary, button")) choose(i); });
     item.addEventListener("mouseenter", () => show(check));
     item.addEventListener("mouseleave", () => show(selected === null ? null : checks[selected]));
     return item;
   });
 
   const seconds = (result.elapsed_ms / 1000).toFixed(1);
-  const heading = el("h2", { tabindex: -1 }, result.headline);
+  const heading = el("h2", { tabindex: -1, id: container.id ? `${container.id}-heading` : null }, result.headline);
   const flagged = checks.map((c, i) => [c, i]).filter(([c]) => c.status !== "pass");
   const jumps = flagged.length
     ? el("p", { class: "jumps" }, "Examine: ", flagged.map(([c, i]) =>
         el("button", { type: "button", class: `jump ${c.status}`, onclick: () => {
-          if (selected !== i) items[i].click();
+          choose(i, false);
           items[i].scrollIntoView({ block: "center" });
-          items[i].focus({ preventScroll: true });
+          $(".show-btn", items[i]).focus({ preventScroll: true });
         } }, c.label)))
     : null;
   container.replaceChildren(...[
@@ -217,7 +345,7 @@ function renderResult(container, result, files) {
   ].filter(Boolean));
 
   const first = checks.findIndex((c) => c.status !== "pass" && c.boxes.length);
-  if (first >= 0) items[first].click();
+  if (first >= 0) choose(first, false);
   return heading;
 }
 
@@ -245,7 +373,10 @@ function renderThumbs() {
     const node = tpl.content.firstElementChild.cloneNode(true);
     $("img", node).src = single.urls[i];
     $("img", node).alt = `Label picture ${i + 1}`;
-    $(".thumb-name", node).textContent = file.name;
+    $(".thumb-open", node).setAttribute("aria-label", `Show a larger picture: ${file.name}`);
+    $(".thumb-open", node).addEventListener("click", () => showLarger(single.urls[i], file.name));
+    // The full name, allowed to wrap after "_", "-" and "." so it stays readable in the narrow card.
+    $(".thumb-name", node).replaceChildren(...file.name.split(/(?<=[_.-])/).flatMap((part) => [part, el("wbr")]));
     $(".thumb-remove", node).setAttribute("aria-label", `Remove ${file.name}`);
     $(".thumb-remove", node).addEventListener("click", () => { single.files.splice(i, 1); renderThumbs(); });
     return node;
@@ -261,6 +392,7 @@ function addSingleFiles(files) {
   if (files.length && !images.length) return showSingleError("That file is not a picture. Choose a JPG or PNG picture of the label.");
   single.files.push(...images);
   single.files = single.files.slice(0, 6);
+  if (images.length) warmUpScanner();
   hideSingleError();
   renderThumbs();
 }
@@ -280,7 +412,16 @@ function setBusy(button, busy, label) {
 async function loadSamples() {
   try {
     const response = await fetch("/api/samples");
-    return response.ok ? await response.json() : [];
+    if (response.ok) return await response.json();
+  } catch { /* no server: read the list of samples itself */ }
+  try {
+    const { rows } = parseCSV(await (await fetch("/samples/batch_applications.csv")).text());
+    return rows.map((row) => ({
+      id: row.label_file,
+      files: row.label_file.split(";").map((name) => name.trim()).filter(Boolean).map((name) => ({ name, url: `/samples/labels/${name}` })),
+      note: row.notes || row.label_file,
+      application: Object.fromEntries(["beverage_type", ...FIELDS].map((f) => [f, row[f] || ""])),
+    }));
   } catch {
     return [];
   }
@@ -312,6 +453,7 @@ function setupSingle(samples) {
     const sample = samples.find((s) => s.id === select.value);
     if (!sample) return;
     single.files = await Promise.all(sample.files.map((f) => fetchFile(f.url, f.name)));
+    warmUpScanner();
     renderThumbs();
     fillApplication(form, sample.application);
     resultBox.hidden = true;
@@ -327,9 +469,9 @@ function setupSingle(samples) {
       return;
     }
     setBusy(button, true);
+    $("#single-status").textContent = "The tool is examining the label.";
     try {
-      const prepared = await Promise.all(single.files.map(prepareImage));
-      const result = await postVerify(prepared, readApplication(form));
+      const { result, prepared } = await checkLabel(single.files, readApplication(form));
       resultBox.hidden = false;
       const heading = renderResult(resultBox, result, prepared);
       resultBox.scrollIntoView({ behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth", block: "start" });
@@ -337,6 +479,7 @@ function setupSingle(samples) {
     } catch (err) {
       showSingleError(err.message);
     } finally {
+      $("#single-status").textContent = ""; // the result heading gets the focus and is read out
       setBusy(button, false, "Check label");
     }
   });
@@ -367,6 +510,7 @@ const HEADER_ALIASES = {
   bottler: ["bottler", "bottler_name_address", "bottler_name_and_address", "producer", "name_and_address", "address"],
   country_of_origin: ["country_of_origin", "country", "origin"],
   application_id: ["application_id", "id", "ttb_id", "cola_id", "serial_number"],
+  notes: ["notes", "note", "comments"],
 };
 const HEADER_LOOKUP = Object.fromEntries(Object.entries(HEADER_ALIASES).flatMap(([key, names]) => names.map((n) => [n, key])));
 
@@ -412,6 +556,7 @@ function addBatchFiles(files) {
     if (/\.csv$/i.test(file.name)) loadCSV(file);
     else if (isImage(file)) batch.files.set(baseName(file.name), file);
   }
+  if (batch.files.size) warmUpScanner();
   const count = $("#batch-file-count");
   count.hidden = batch.files.size === 0;
   count.textContent = `${plural(batch.files.size, "picture")} added.`;
@@ -532,24 +677,24 @@ function updateBatchCounts() {
   }
   $("#batch-progress-text").textContent = text;
   $("#batch-export").disabled = checked === 0;
+  // Screen readers hear the progress at each quarter and at the end, not after every label.
+  const quarter = batch.running ? Math.floor((done.length / Math.max(total, 1)) * 4) : 4;
+  if (quarter !== batch.announced) {
+    batch.announced = quarter;
+    $("#batch-status").textContent = text;
+  }
 }
 
 async function runItem(item) {
   item.status = "running";
   renderBatchItem(item);
-  for (let attempt = 0; attempt < 2; attempt++) {
-    try {
-      const prepared = await Promise.all(item.files.map(prepareImage));
-      item.result = await postVerify(prepared, item.application);
-      item.status = item.result.overall;
-      if (item.notFound.length) item.result.notices.unshift(`These pictures were not added: ${item.notFound.join(", ")}.`);
-      break;
-    } catch (err) {
-      item.status = "error";
-      item.error = err.message;
-      if (err.message.startsWith(NO_CONNECTION)) await new Promise((r) => setTimeout(r, 1000));
-      else break;
-    }
+  try {
+    item.result = (await checkLabel(item.files, item.application, { batch: true })).result;
+    item.status = item.result.overall;
+    if (item.notFound.length) item.result.notices.unshift(`These pictures were not added: ${item.notFound.join(", ")}.`);
+  } catch (err) {
+    item.status = "error";
+    item.error = err.message;
   }
   renderBatchItem(item);
   updateBatchCounts();
@@ -558,6 +703,7 @@ async function runItem(item) {
 async function startBatch() {
   batch.running = true;
   batch.stop = false;
+  batch.announced = -1;
   batch.started = performance.now();
   $("#batch-start").disabled = true;
   $("#batch-sample").hidden = true;
@@ -572,7 +718,10 @@ async function startBatch() {
   const worker = async () => {
     while (!batch.stop && queue.length) await runItem(queue.shift());
   };
-  await Promise.all(Array.from({ length: BATCH_CONCURRENCY }, worker));
+  // When the browser does all of the work, read as many labels at once as it has Tesseract workers.
+  const engine = await browserScanner();
+  const concurrency = engine && !serverUsable() ? engine.workerCount() : BATCH_CONCURRENCY;
+  await Promise.all(Array.from({ length: concurrency }, worker));
   batch.running = false;
   $("#batch-stop").hidden = true;
   batch.items.filter((i) => i.status === "queued").forEach((i) => { i.status = "error"; i.error = "No result. You stopped the check."; renderBatchItem(i); });
@@ -632,18 +781,41 @@ function setupBatch(samples) {
 
 // ---------------------------------------------------------------- start
 
+async function loadConfig() {
+  if (MODE === "local") return;
+  try {
+    const response = await fetch("/api/config");
+    if (!response.ok) throw new Error(`status ${response.status}`);
+    server.config = await response.json();
+    server.up = true;
+  } catch {
+    server.up = false; // a static copy of the page, or the server is down: the browser does the work
+    server.retryAt = performance.now() + SERVER_RETRY_MS;
+  }
+}
+
+/** The footer says where the labels are read. */
+async function updateEngineNote() {
+  const engine = await browserScanner();
+  let text;
+  if (MODE === "local") text = "The text scanner in your browser does all of the work.";
+  else if (!serverUsable() || !server.up) text = engine ? "The server does not answer. The text scanner in your browser reads the labels." : "The server does not answer.";
+  else if (engine) text = "The text scanner in your browser reads the labels. If it cannot confirm all items, this server reads the pictures again.";
+  else text = "The text scanner on this server reads the labels.";
+  const vision = MODE !== "local" && server.up && server.config.vision && server.config.vision !== "off";
+  text += vision ? ` An AI reader (${server.config.vision_model}) helps with labels that are hard to read.` : " The tool does not use outside services.";
+  $("#engine-note").textContent = ` ${text}`;
+}
+
 async function main() {
   setupTabs();
   setupPickers();
+  setupPictureDialog();
+  await loadConfig();
   const samples = await loadSamples();
   setupSingle(samples);
   setupBatch(samples);
-  try {
-    const config = await (await fetch("/api/config")).json();
-    $("#engine-note").textContent = config.vision !== "off"
-      ? ` The text scanner on this server reads the labels. An AI reader (${config.vision_model}) helps with labels that are hard to read.`
-      : " The text scanner on this server reads the labels. It does not use outside services.";
-  } catch { /* footer note is optional */ }
+  updateEngineNote();
 }
 
 main();

@@ -22,6 +22,8 @@ BOLD_RATIO = 1.20  # heading strokes this much thicker than body strokes -> bold
 REGULAR_RATIO = 1.08  # at or below this -> same weight as the body text
 MIN_LETTER_PX = 10  # smaller than this and stroke measurements are mostly noise
 REFERENCE_HEIGHT = 48
+TOO_SMALL = "The text is too small to measure the type weight of the heading."
+SMALL_IN_PICTURE = "The heading in this picture is too small to measure its type weight."
 
 
 @dataclass
@@ -55,14 +57,21 @@ def header_boldness(
     """Compare stroke weight of the heading words with the warning text after them."""
     heights = [h.height for h in header if h.height >= MIN_LETTER_PX]
     if not heights:
-        return None, "The text is too small to measure the type weight of the heading."
+        return None, TOO_SMALL
     scale = min(6.0, REFERENCE_HEIGHT / float(np.median(heights)))
     header_widths = [w for w in (stroke_width(gray, h, scale) for h in header) if w]
     body_words = [b for b in body if sum(c.isalpha() for c in b.text) >= 3]
     body_widths = [w for w in (stroke_width(gray, b, scale) for b in body_words) if w]
     if not header_widths or len(body_widths) < 3:
-        return None, "The text is too small to measure the type weight of the heading."
-    ratio = float(np.median(header_widths) / np.median(body_widths))
+        return None, TOO_SMALL
+    return judge_weight(float(np.median(header_widths) / np.median(body_widths)))
+
+
+def judge_weight(ratio: float) -> tuple[bool | None, str]:
+    """Bold, regular, or could not tell, from heading stroke width / body stroke width.
+
+    The browser measures the same ratio (app/static/local/imaging.js).
+    """
     if ratio >= BOLD_RATIO:
         return True, f"The heading letters are {ratio:.2f} times as thick as the warning text."
     if ratio <= REGULAR_RATIO:

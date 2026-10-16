@@ -296,6 +296,8 @@ def check_alcohol(app: Application, evidences: list[Evidence]) -> CheckResult | 
         )
 
     findings = []
+    no_percent = with_percent = False
+    proof_only: set[int] = set()  # ids of findings from readings that saw a proof but no ABV statement
     for ev in evidences:
         text = _alcohol_text(ev)
         abvs = find_abv_mentions(text)
@@ -307,6 +309,8 @@ def check_alcohol(app: Application, evidences: list[Evidence]) -> CheckResult | 
         matching = sorted((m for m in abvs if abs(m.value - wanted.abv) < 0.05), key=lambda m: not m.percent)
         if matching:
             m = matching[0]
+            no_percent |= not m.percent
+            with_percent |= m.percent
             message, status, key = f"The label shows the same value: {m.value:g}% alcohol by volume.", Status.PASS, ""
             if not m.percent:
                 message, status = (f"The label shows {m.value:g} next to “ALC/VOL”, but it has no % sign. "
@@ -333,9 +337,13 @@ def check_alcohol(app: Application, evidences: list[Evidence]) -> CheckResult | 
             p = proofs[0]
             if wanted.proof is not None and abs(p.value - wanted.proof) < 0.05 or abs(p.value / 2 - wanted.abv) < 0.05:
                 findings.append(Finding(Status.PASS, f"The label shows the same value: {p.value:g} proof ({p.value / 2:g}% ABV).", p.text, ev, boxes(p), 90))
+                proof_only.add(id(findings[-1]))
             else:
                 findings.append(Finding(Status.FAIL, f"The label shows {p.value:g} proof. The application shows {wanted.describe()}.",
                                         p.text, ev, boxes(p), 50, key=f"proof:{p.value:g}"))
+    if no_percent and not with_percent:
+        # A reading that saw only the proof cannot show the % sign that another reading found missing.
+        findings = [f for f in findings if id(f) not in proof_only]
     if not findings:
         findings.append(Finding(Status.REVIEW, "The tool did not find an alcohol content statement on the label."))
     return _result("alcohol_content", label, app.alcohol_content, _pick(findings))

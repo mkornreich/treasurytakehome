@@ -45,6 +45,10 @@ class Settings:
     max_images: int = 6  # front, back, neck... per application
     max_upload_mb: int = 15
 
+    # Let the page read labels in the browser first (tesseract.js, served from this server),
+    # and send pictures here only when that reading cannot confirm every check.
+    browser_ocr: bool = True
+
     @property
     def vision_enabled(self) -> bool:
         return self.vision_mode != "off"
@@ -65,4 +69,5 @@ class Settings:
             vision_effort=os.environ.get("VISION_EFFORT", cls.vision_effort),
             vision_timeout_s=_float("VISION_TIMEOUT_SECONDS", cls.vision_timeout_s),
             max_upload_mb=int(_float("MAX_UPLOAD_MB", cls.max_upload_mb)),
+            browser_ocr=os.environ.get("BROWSER_OCR", "on").lower() not in ("off", "0", "false", "no"),
         )

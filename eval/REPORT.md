@@ -127,6 +127,85 @@ Each fix answers a failure seen on these labels. Each one also has a regression 
 | "GLASTONBURY CT" became "GLASTONBURY Noneconnecticut" when a state code had no comma before it | Bug fixed in `text.expand_states`. |
 | Name and address printed with a street in between | Bottler addresses are matched in parts: name, then city and state. |
 | "JETTY. WAVE", "FIVE _ BOROUGHS", "7 5 0 m L", "15.5 “¥ o GALLONS", "43% ALC/VOL IL" | Phrase matching forgives spacing and stray specks. Unit parsing closes up letter-spacing, skips specks before the unit, and reads "IL" right after an alcohol statement as 1 L. |
+| In the browser, one pass read Belle Isle's "107 PROOF" but not the "53.5 ALC/VOL" beside it, and that matching proof made the alcohol content OK, hiding the missing % sign | A reading that saw only the proof no longer confirms the alcohol content when another reading saw the statement without its % sign (`rules.check_alcohol`, and the same in `rules.js`). A reading that shows the % sign still does. The server never got that reading, so its results did not change. |
+
+## The browser-only path
+
+When the server does not answer, or the page is served as plain static files, the page checks labels by itself:
+tesseract.js 7 (the same Tesseract engine and English model, compiled to WebAssembly) and a JavaScript port of
+the rules ([`app/static/local/`](../app/static/local)). This section measures that path on the same 21 labels.
+
+**Method.** [`run_browser_eval.py`](run_browser_eval.py) serves the page's files and the label images on
+127.0.0.1, opens [`browser_harness.html`](browser_harness.html) in headless Chrome 155, and the page checks every
+label with exactly the code it uses when the server is out of reach. The two runs per label, the ground truth
+and the scoring are `run_eval.py`'s. As for the server, Chrome is pinned to **one CPU** (with three Tesseract
+workers and the page sharing it). A second run used all CPUs, as on an ordinary desktop.
+
+| Truthful applications | Server (one CPU) | Browser (one CPU) | Browser (all CPUs) |
+|---|---|---|---|
+| Correct | 134 of 171 (78%) | **136 of 171 (80%)** | 136 of 173 (79%) |
+| False review (safe, costs a look) | 37 (22%) | 35 (20%) | 37 (21%) |
+| False problem | 0 | **0** | 0 |
+| Missed | 0 | **0** | 0 |
+| Labels with every check right | 5 of 21 | 5 of 21 | 5 of 21 |
+
+| Tampered applications | Server | Browser (one CPU) | Browser (all CPUs) |
+|---|---|---|---|
+| Alcohol content changed (21) | 15 Problem, 6 Examine | 15 Problem, 6 Examine, **0 missed** | 16 Problem, 5 Examine |
+| Net contents changed (20) | 14 Problem, 6 Examine | 12 Problem, 8 Examine, **0 missed** | 12 Problem, 8 Examine |
+| Brand replaced (21) | 21 Examine | 21 Examine, **0 missed** | 21 Examine |
+
+| Time per label | Server (one CPU) | Browser (one CPU) | Browser (all CPUs) |
+|---|---|---|---|
+| Median | 3.1 s | 3.2 s | 3.1 s |
+| Worst | 3.8 s | 3.8 s | 3.6 s |
+
+(The browser's all-CPU run has two more checks because on one more label it found the warning, which adds the
+capitals and bold rows.)
+
+**By check.**
+
+| Check | Server | Browser (one CPU) | Browser (all CPUs) |
+|---|---|---|---|
+| brand name | 17/21 | 17/21 | 17/21 |
+| class type | 17/21 | 17/21 | 17/21 |
+| alcohol content | 20/21 | 20/21 | 19/21 |
+| net contents | 13/21 | 15/21 | 15/21 |
+| bottler | 19/21 | 19/21 | 19/21 |
+| country of origin | 7/7 | 7/7 | 7/7 |
+| warning text | 10/21 | 10/21 | 10/21 |
+| warning caps | 18/19 | 18/19 | 19/20 |
+| warning bold | 13/19 | 13/19 | 13/20 |
+
+**Where they differ.** 14 of the 21 labels give the same result on every check. On the other seven, each path is
+sometimes the one that reads a borderline item:
+
+| Label | Browser better | Browser worse |
+|---|---|---|
+| Appalachian Spirits | net contents read | – |
+| Somar | net contents read; heading measured as bold (1.21×) | – |
+| Five Boroughs | alcohol content and net contents read | – |
+| Blue Chair Bay | – | "1.75 L" not read; the tampered net contents is "Examine", not "Problem" |
+| D2 | – | "13%" not read |
+| Henebery | – | heading measured on another reading at 1.00×, so "not bold: examine" (the server measured 1.26×) |
+| Candymaker | – | the tampered net contents was seen by one reading only, so "Examine", not "Problem" |
+
+All of these are "Examine" results; no difference is a wrong "OK" or a wrong "Problem". The causes:
+
+- **tesseract.js and native Tesseract do not read identically.** They share the model, but the WebAssembly build
+  uses different arithmetic, so small or condensed text ("1.75 L", "13%") comes out differently. The same effect
+  makes the browser read other labels better.
+- **The browser's clean-ups are ports, not the OpenCV originals.** Rotation and resampling match OpenCV's bicubic
+  interpolation, and the glare filter differs from OpenCV's by 0.3 grey levels or less on average. The bilateral smoothing before
+  binarization is left out, because it is too slow in JavaScript.
+- **Sideways pictures are found by reading both quarter turns**, not by Tesseract's orientation detection, which
+  would cost another 9 MB download. That costs time on labels with a vertical strip, so fewer passes fit in the
+  budget.
+- **One CPU is shared by the page and three Tesseract workers.** The budget is the same wall-clock 3.5 s as on the
+  server, so a slow computer gets fewer passes, and more "Examine". It does not take longer.
+
+The evaluation found one real fault, in the rules both paths share: a reading that saw only the proof could hide
+a missing % sign (Belle Isle). It is fixed in both, with a regression test and a parity case (see the table above).
 
 ## What is still hard (the 22% false reviews)
 
@@ -160,5 +239,14 @@ uv run python eval/fetch_cola.py
 uv run python eval/run_eval.py --save eval/results/after.json --compare eval/results/baseline.json
 ```
 
-`eval/results/baseline.json` and `eval/results/after.json` hold per-label, per-check results for the two runs
-in this report.
+The browser-only path needs Chrome or Chromium installed. Add `--all-cpus` for the second run; `--only` checks
+chosen TTB IDs, and `--verbose` prints where the time went.
+
+```bash
+uv run python eval/run_browser_eval.py --save eval/results/browser.json --compare eval/results/after.json
+```
+
+`eval/results/baseline.json` and `eval/results/after.json` hold per-label, per-check results for the server runs
+in this report; `browser.json` and `browser-all-cpus.json` hold the browser-only runs. Timings vary a little from
+run to run: a repeat of the server run on the same day differed on one check (Five Boroughs' net contents was
+read within the budget).

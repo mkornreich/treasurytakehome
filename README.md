@@ -4,15 +4,17 @@ Label Check compares a picture of an alcohol beverage label with what the applic
 
 **Deployed prototype:** <https://labelcheck.mkornreich.me> (also at <https://label-check-fz5a.onrender.com>)
 
-- **Fast.** Clean labels come back in about 0.3 s. Angled, glary or sideways phone photos take 1–2 s. Real approved labels from the TTB registry take 3.1 s median and 3.8 s at worst, on a single CPU.
-- **Tested on real labels.** On 21 approved labels from TTB's Public COLA Registry, it raised **no false rejections** and **missed nothing**, including every deliberately tampered value. 78% of checks were confirmed automatically; the rest were honestly marked "Examine". See [eval/REPORT.md](eval/REPORT.md).
-- **Works behind the firewall.** Reading is done by Tesseract OCR on the server itself, and the page loads nothing from outside sites. An optional AI reader (Claude vision) can help with hard photos when the network allows it, but the app never depends on it.
+- **Fast.** The agent's browser reads the label first, so a clean label or a sideways photo comes back in about 0.5 s however slow the server is. Labels that need a closer look are read again on the server: on one CPU core, 1–2 s for angled or glary photos, and 3.1 s median and 3.8 s at worst for real approved labels from the TTB registry ([details](#where-the-work-is-done-browser-and-server)).
+- **Tested on real labels.** On 21 approved labels from TTB's Public COLA Registry, it raised **no false rejections** and **missed nothing**, including every deliberately tampered value. 78% of checks were confirmed automatically; the rest were honestly marked "Examine". The browser-only path does as well (80%, also with no false rejections and nothing missed). See [eval/REPORT.md](eval/REPORT.md).
+- **Works behind the firewall, and without the server.** Reading is done by Tesseract OCR: in the browser (tesseract.js, served by this app) and on the server. The page loads nothing from outside sites. If the server does not answer, or the page is served as plain static files, the browser does the whole check, with the same rules, tested to give the same answers. An optional AI reader (Claude vision) can help with hard photos when the network allows it, but the app never depends on it.
 - **Judgment, not just string matching.** "STONE'S THROW" matches "Stone's Throw". "750 mL" matches "75 cl", and "12 FL. OZ." matches "355 mL". A missing accent or a near-miss is sent to a person, not rejected.
 - **Strict where the rules are strict.** The government warning must be word-for-word, with "GOVERNMENT WARNING:" in capitals and bold. The tool shows a word-level diff when it isn't.
 - **Plain, controlled language.** All text on the page, including every result message, follows ASD-STE100 Simplified Technical English: short sentences, approved verbs, one word for one meaning. It was checked with the [SimpleEnglish](https://github.com/AminBlg/SimpleEnglish) STE linter; no tool can guarantee full compliance.
-- **Simple to use.** Large text, one obvious button per step, and results in sentences ("Label shows 40%; the application says 45%"). Click any result to see where it was found on the label.
+- **Simple to use, and accessible.** Large text, one obvious button per step, and results in sentences ("Label shows 40%; the application says 45%"). *Show on the label* highlights where each item was found; click any picture to see it larger. It meets WCAG 2.2 AA in automated and manual checks ([details](#accessibility-wcag-22-aa)).
 - **Batch mode.** Drop in a folder of pictures plus a CSV of applications. The results stream in as each label finishes, can be filtered to problems, and can be downloaded as a CSV.
-- **Nothing is stored.** Pictures and application data exist in memory for the length of one request.
+- **Nothing is stored.** Pictures and application data exist in memory for the length of one request. When the browser confirms every item, the picture never leaves the agent's computer.
+
+**Contents:** [Setup and run](#quick-start) · [Using it](#using-it) · [Approach](#approach-how-it-works) · [Browser and server](#where-the-work-is-done-browser-and-server) · [Stakeholder concerns](#how-each-stakeholder-concern-was-addressed) · [Accessibility](#accessibility-wcag-22-aa) · [Assumptions](#assumptions) · [Limitations and trade-offs](#limitations-and-trade-offs) · [Deploying](#deploying) · [Tools used](#tools-used)
 
 ---
 
@@ -48,7 +50,7 @@ uv run uvicorn app.main:app --port 8000
 uv run pytest
 ```
 
-There are 94 tests: unit tests for parsing and rules, regression tests for every failure found on real labels, the AI reader against a fake client, the HTTP API, and end-to-end runs over every sample label with real OCR. The end-to-end runs also assert each label finishes in under 5 seconds.
+There are 101 tests: unit tests for parsing and rules, regression tests for every failure found on real labels, the AI reader against a fake client, the HTTP API, end-to-end runs over every sample label with real OCR (each must finish in under 5 seconds), and parity tests that run the browser's JavaScript rules and image measurements against the Python ones. The parity tests need [Node.js](https://nodejs.org/) 18 or later and are skipped without it.
 
 ### Run the evaluation on real labels
 
@@ -62,6 +64,12 @@ uv run python eval/run_eval.py --compare eval/results/after.json
 
 The first command downloads 21 approved labels from TTB's Public COLA Registry. They are kept out of git, because the artwork belongs to the brand owners. The second scores the app against hand-checked ground truth in [eval/real_labels.csv](eval/real_labels.csv), pinned to one CPU. [eval/REPORT.md](eval/REPORT.md) has the results and what they led to.
 
+To score the browser-only path the same way (in headless Chrome, which must be installed):
+
+```bash
+uv run python eval/run_browser_eval.py --compare eval/results/after.json
+```
+
 ---
 
 ## Using it
@@ -70,7 +78,7 @@ The first command downloads 21 approved labels from TTB's Public COLA Registry. 
 
 1. **Add the label picture.** Drag it in or press *Choose picture…*. If the warning is on the back label, add the back picture too: all pictures for one application are read together.
 2. **Type what the application says.** Leave a box empty to skip that check. The government warning is always checked.
-3. **Press *Check label*.** The verdict comes first ("All 8 checks passed", "1 problem found", "2 items need a closer look"). Below it is one card per check, and the label with the selected item highlighted.
+3. **Press *Check label*.** The verdict comes first ("All 8 checks are OK", "1 problem found", "2 items to examine"). Below it is one card per check, and the label with the selected item highlighted. *Show on the label* on a card highlights that item; the magnifier button, or a click on any picture, shows it larger.
 
 | Result | Meaning |
 |---|---|
@@ -96,11 +104,11 @@ The first command downloads 21 approved labels from TTB's Public COLA Registry. 
    | `application_id` (optional) | carried through to the results CSV |
 
    Common alternative headers (`brand`, `abv`, `filename`, …) and semicolon-separated files from European Excel are accepted. Without a spreadsheet, each picture is still checked for the warning, alcohol content and net contents.
-3. Press *Check N labels*. Four labels are checked at a time, with progress and a time-left estimate. Filter to *Problems* or *Examine*, open any row for the full result, and use *Download results (CSV)* for the record.
+3. Press *Check N labels*. Four labels are checked at a time (when the browser does all the work, one per browser worker, up to three), with progress and a time-left estimate. Filter to *Problems* or *Examine*, open any row for the full result, and use *Download results (CSV)* for the record.
 
 ---
 
-## How it works
+## Approach: how it works
 
 ```
  picture(s) ──► decode + EXIF rotate ──► OCR round 1 (grayscale) ──► rules ──► all OK? ──► answer
@@ -143,21 +151,73 @@ The rules are deterministic. **The AI reads; the rules decide**, so every outcom
 
 ---
 
+## Where the work is done: browser and server
+
+The same Tesseract engine and English model run in two places: natively on the server, and in the agent's browser as [tesseract.js](https://github.com/naptha/tesseract.js) 7 (WebAssembly). The browser files are served by this app from [`app/static/vendor/`](app/static/vendor/tesseract-7.0.0/README.md); nothing comes from another site. The English model is the tessdata_fast 4.1.0 file that the server's `tesseract-ocr-eng` package installs.
+
+```
+                        ┌── all OK ──► answer (only words and positions were sent; the picture stayed in the browser)
+ browser reads once ──► server rules ┤
+ (upright if sideways)  /api/verify-readings
+                        └── else ────► server reads the pictures again with every pass (/api/verify) ──► answer
+
+ server does not answer, or plain static files ──► browser runs every pass and the rules itself ──► answer
+```
+
+| Situation | What happens |
+|---|---|
+| Normal | The browser reads each picture once, turned upright first if it is sideways. It sends the words, their positions and the measured heading weight to `POST /api/verify-readings`, and the server applies the rules. If every check is OK, that is the answer. Otherwise the page sends the pictures to `POST /api/verify`, and the server reads them again with all of its passes. |
+| The server does not answer, or the page is plain static files | The browser does everything: the same rounds of passes (straightened, glare channel, layout, rotations, binarized, a second look at the warning), the same 3.5 s budget, and the same rules. The result says "The server did not answer. The browser examined the label." The page tries the server again after a minute. |
+| The browser cannot run it (no WebAssembly SIMD, or the files are blocked) | The page sends the pictures to the server, as before. |
+
+**The same answers in both places.** [`app/static/local/`](app/static/local) ports the rules (`rules.py`, `warning.py`, `units.py`, `text.py`) and the matching functions they use: RapidFuzz's `ratio` and `partial_ratio_alignment`, ported from the exact C++ the server runs, and `difflib.SequenceMatcher`. It also ports the image work (`imaging.py`, and the bold measurement in `typography.py`). [`tests/test_local_parity.py`](tests/test_local_parity.py) runs both versions on more than 650 cases and requires identical results: status, message, values, highlight boxes and warning diff. The cases come from every reading pass the server makes on every sample, with the real applications, altered applications, and doctored readings. A second test compares the bold measurement and the photo notices on the samples.
+
+**Measured** on the 13 samples (Chrome on a Ryzen AI 9 HX 370 laptop, October 2026):
+
+| | Clean labels, sideways and side-panel photos | Glare photo | Labels with problems |
+|---|---|---|---|
+| Normal (browser reads, server decides) | 0.4–0.7 s | 1.7 s (read again on the server) | 2.4–3.5 s (read again on the server) |
+| Browser only | 0.4–0.6 s | 1.6 s | 2.6–3.6 s |
+| Server only, on the deployed half-CPU instance | 1.3–5.4 s | 4.8 s | 2.8–3.9 s |
+
+Every result was the same in all three. A browser-only batch of all 13 samples took 16 s, again with identical results. In a batch nobody waits for one label, so the browser runs every pass a label needs instead of stopping at 3.5 s.
+
+---
+
 ## How each stakeholder concern was addressed
 
 | What we heard | What was built |
 |---|---|
-| "If we can't get results back in about 5 seconds, nobody's going to use it." (Sarah) | Local OCR with early exit: ~0.3 s for clean labels, 1–2 s for hard photos. The AI reader is only consulted when OCR can't confirm everything, and gets a hard 4.5 s deadline. If it is slow or unreachable, the answer comes from OCR with a notice. Large photos are shrunk in the browser before upload. |
-| "Something my mother could figure out." Half the team is over 50. (Sarah, Dave) | 18 px base type, high contrast, numbered steps, one primary button, results as sentences with ✓/!/✕ *and* words (never colour alone), click-to-highlight on the label, an "Examine:" jump list in the verdict, keyboard and screen-reader friendly, works on a phone. |
+| "If we can't get results back in about 5 seconds, nobody's going to use it." (Sarah) | The browser reads the label first: about 0.5 s for a clean label or a sideways photo, whatever the server's load. Labels that need more work get local OCR rounds with early exit, inside a 3.5 s budget. The AI reader is only consulted when OCR can't confirm everything, and gets a hard 4.5 s deadline. If it is slow or unreachable, the answer comes from OCR with a notice. Large photos are shrunk in the browser before upload. |
+| "Something my mother could figure out." Half the team is over 50. (Sarah, Dave) | 18 px base type, high contrast, numbered steps, one primary button, results as sentences with ✓/!/✕ *and* words (never colour alone), *Show on the label* buttons, pictures that open larger with one click, full file names, an "Examine:" jump list in the verdict, and plain controlled English. WCAG 2.2 AA ([below](#accessibility-wcag-22-aa)); works on a phone. |
 | Batch uploads of 200–300 labels. (Sarah, Janet) | *Check many labels*: a folder of pictures plus a CSV, four at a time, live progress with a time estimate, filters, and CSV export. The server stays stateless, so nothing is queued or stored on it. |
-| Outbound traffic to many domains is blocked. (Marcus) | All reading happens on the server; the page loads no CDN fonts or scripts. The AI reader is off unless configured, and any failure falls back to OCR. In production it could point at a model inside the agency's own Azure boundary (Claude is available through Microsoft Foundry). |
-| Not storing anything sensitive; PII considerations. (Marcus) | No database, no disk writes; uploads are processed in memory and discarded. Logs record only outcome and timing, never label or application content. |
+| Outbound traffic to many domains is blocked. (Marcus) | All reading happens in the browser and on this server; the page loads no CDN fonts, scripts or models. If the server itself is out of reach, the browser does the whole check. The AI reader is off unless configured, and any failure falls back to OCR. In production it could point at a model inside the agency's own Azure boundary (Claude is available through Microsoft Foundry). |
+| Not storing anything sensitive; PII considerations. (Marcus) | No database, no disk writes; uploads are processed in memory and discarded. When the browser confirms every item, the picture never leaves the agent's computer. Logs record only outcome and timing, never label or application content. The browser keeps a copy of the scanner and the English model (no label data) so it need not download them again. |
 | "STONE'S THROW" vs "Stone's Throw" needs judgment. (Dave) | Case and punctuation differences are an OK with a note. Accent-only and near-misses go to a person instead of being rejected. |
 | The warning must be exact, "GOVERNMENT WARNING:" in caps and bold. (Jenny) | A dedicated word-level comparison with a visual diff, a separate capitals check, and a measured bold check. |
 | Photos at weird angles, bad lighting, glare. (Jenny) | Automatic rotation (sideways photos), deskewing, glare-resistant colour-channel passes, adaptive thresholding, plus plain-language photo-quality notices (blurry / dark / glare / low resolution). |
 | Standalone proof of concept, no COLA integration. (Marcus) | A self-contained container with a small JSON API ([below](#api)) that a future COLA integration could call. |
 
 ---
+
+## Accessibility (WCAG 2.2 AA)
+
+The target is [WCAG 2.2](https://www.w3.org/WAI/standards-guidelines/wcag/) Level AA. That also covers WCAG 2.0 AA, which Section 508 requires of federal agencies.
+
+- **Automated:** [axe-core](https://github.com/dequelabs/axe-core) 4.10, with the WCAG 2.0, 2.1 and 2.2 A and AA rules plus best practices, finds no violations. It ran on every state of the page: the empty form, a result, the enlarged picture, batch ready, batch results with a row open, and help.
+- **Measured by hand:**
+  - text contrast is at least 4.5:1, placeholders included (1.4.3);
+  - control borders and the focus ring are at least 3:1 against their background (1.4.11);
+  - nothing scrolls sideways at 320 px wide (1.4.10);
+  - no text is cut off with WCAG's text-spacing values (1.4.12);
+  - every control is at least 24 × 24 px (2.5.8).
+- **Keyboard:** everything works without a mouse, with a dark focus ring. Each result card has a *Show on the label* toggle button, and the card itself is no longer a button that holds other controls. The picture viewer is a modal dialog with *Full size* and *Close* buttons, Esc closes it, and focus goes back to where it was.
+- **Screen readers:**
+  - one `h1`, a heading for each section, and landmarks;
+  - labelled controls;
+  - short status messages: "The tool is examining the label.", and batch progress at each quarter rather than after every label;
+  - focus moves to the result heading when a check finishes, and errors are announced as alerts.
+- **Not done:** sessions with people who use screen readers or magnifiers. Automated tools find only part of the WCAG problems, so a production version needs that.
 
 ## Configuration
 
@@ -173,7 +233,10 @@ All optional, set as environment variables.
 | `OCR_BUDGET_SECONDS` | `3.5` | Time allowed for extra OCR passes on hard photos. |
 | `OCR_WORKERS` | CPUs available | Parallel Tesseract processes (container CPU limits are respected). |
 | `MAX_UPLOAD_MB` | `15` | Per-picture upload limit. |
+| `BROWSER_OCR` | `on` | `off` makes the page send every picture to the server instead of reading it in the browser first. |
 | `PORT` | `8000` | Port inside the container. |
+
+To compare the paths, add `?mode=local` to the page address (everything in the browser) or `?mode=server` (every picture to the server).
 
 ## API
 
@@ -185,7 +248,20 @@ curl -s -X POST http://localhost:8000/api/verify \
   -F 'application={"brand_name":"OLD TOM DISTILLERY","alcohol_content":"45% Alc./Vol.","net_contents":"750 mL"}'
 ```
 
-The response is an `overall` status (`pass` / `review` / `fail`), a `headline`, and one entry per check with `status`, `message`, `expected`, `found` and `boxes`. The boxes are where it was found, as fractions of the picture's width and height. The response also includes `notices` about photo quality or the AI reader, the engines used, and timings. Other endpoints: `GET /api/health`, `GET /api/config`, `GET /api/samples`, and `GET /robots.txt`, which asks every crawler to stay out.
+The response is an `overall` status (`pass` / `review` / `fail`), a `headline`, and one entry per check with `status`, `message`, `expected`, `found` and `boxes`. The boxes are where it was found, as fractions of the picture's width and height. The response also includes `notices` about photo quality or the AI reader, the engines used, and timings.
+
+`POST /api/verify-readings` applies the same rules to text that was already read, with no picture. The browser uses it, and another OCR system could too:
+
+```json
+{
+  "application": {"brand_name": "OLD TOM DISTILLERY", "net_contents": "750 mL"},
+  "readings": [{"image": 0, "words": [{"text": "OLD", "conf": 96, "x": 0.10, "y": 0.08, "w": 0.15, "h": 0.04}],
+                "heading_weight": 1.43, "heading_too_small": ""}],
+  "ocr_ms": 350
+}
+```
+
+`heading_weight` is the stroke width of "GOVERNMENT WARNING" divided by that of the warning text, as [`typography.py`](app/extraction/typography.py) measures it. Other endpoints: `GET /api/health`, `GET /api/config`, `GET /api/samples`, and `GET /robots.txt`, which asks every crawler to stay out.
 
 ---
 
@@ -236,15 +312,18 @@ Regenerate them with `uv run python samples/generate_labels.py`. Real photos and
 - **Batch runs in the browser.** Closing the tab stops it. That is a deliberate trade for a stateless server with nothing stored; a production version would add a job queue with retention rules.
 - **No sign-in or audit trail.** It's a prototype. Production would sit behind the agency's identity provider and log decisions, not content.
 - **English labels only** (the Tesseract `eng` model).
+- **The browser and the server read slightly differently.** tesseract.js and native Tesseract use the same model but different arithmetic, so they can disagree on borderline text. On the 21 real labels the browser-only path is as safe as the server (no false problems, nothing missed, 80% of checks confirmed against 78%), but 7 labels differ on a borderline item in one direction or the other ([eval/REPORT.md](eval/REPORT.md#the-browser-only-path)).
+- **The browser-only path skips two server steps.** To find which way a sideways photo is turned, it reads both quarter turns instead of using Tesseract's orientation detection (an extra 9 MB download). Before binarizing, it does not apply the server's bilateral smoothing, which is too slow in JavaScript.
+- **The first visit downloads about 6 MB** for the browser scanner; browsers keep it for a year. A browser without WebAssembly SIMD uses the server instead. When the browser does all the work, the picture clean-up runs on the page's main thread, so the page can be slow to respond during a large batch.
 - **The AI reader sends pictures to an external API** when enabled. That needs a policy decision, or a model hosted inside the agency's boundary.
 
 ---
 
 ## Deploying
 
-The app is one stateless container, so any container host works. 1 vCPU / 1 GB RAM is enough: each label takes ≤1.5 s on one CPU. More CPUs speed up batches.
+The app is one stateless container, so any container host works. 1 vCPU / 1 GB RAM is enough: each label takes ≤1.5 s on one CPU. More CPUs speed up batches. Because the browser reads first, clean labels and sideways photos do not depend on the server's speed.
 
-- **Render:** *New → Blueprint →* select this repository ([`render.yaml`](render.yaml) is included). It uses Render's default 0.5 CPU / 512 MB instance, which checks a label in about 1–3.5 s, photos included. The free instance is too slow for the 5-second target. To enable the AI reader, add `ANTHROPIC_API_KEY` under the service's *Environment* settings.
+- **Render:** *New → Blueprint →* select this repository ([`render.yaml`](render.yaml) is included). It uses Render's default 0.5 CPU / 512 MB instance. Measured there on the sample labels (October 2026), from upload to answer: about 1.3 s for a clean label, 3–4 s for a label with problems (the tool reads it more times before it reports), and 4.8–5.4 s for an angled or sideways photo. That is at the edge of the 5-second target. A 1 CPU instance is about twice as fast, and the free instance is too slow. To enable the AI reader, add `ANTHROPIC_API_KEY` under the service's *Environment* settings.
 - **Azure Container Apps** (matches the agency's Azure environment):
 
   ```bash
@@ -252,6 +331,13 @@ The app is one stateless container, so any container host works. 1 vCPU / 1 GB R
   ```
 
 - **Any Docker host:** `docker run -p 80:8000 label-check`.
+- **Static files only, no server code:** the page also works from any static web host, with every check done in the browser. Serve this folder at the root of a site:
+
+  ```bash
+  mkdir -p site/static && cp -r app/static/. site/static/ && cp app/static/index.html site/ && cp -r samples site/
+  ```
+
+  The page finds no API, reads the sample list from `samples/batch_applications.csv`, and does all of the work in the browser.
 
 ## Project layout
 
@@ -266,6 +352,7 @@ app/
     ocr.py              Tesseract passes, rotation and skew detection
     typography.py       bold-heading measurement
     vision.py           optional Claude vision reader
+    browser.py          readings sent by the text scanner in the browser
   verification/
     evidence.py         common shape for anything a reader saw
     text.py             normalization and fuzzy phrase search
@@ -273,11 +360,16 @@ app/
     warning.py          government warning alignment and diff
     rules.py            the checks and how readers' results combine
   static/               index.html, app.css, app.js (no build step, no external assets)
+    local/              the check in the browser: engine.js (tesseract.js passes), imaging.js,
+                        and the rules ported from verification/ (rules, warning, units, text, fuzz)
+    vendor/             tesseract.js 7.0.0 and the English model, with their sources and checksums
 samples/                synthetic labels, batch CSV, generator
-eval/                   real-label evaluation: registry fetcher, ground truth, scorer, report
-tests/                  unit, API, vision (mocked), real-label regression and end-to-end tests
+eval/                   real-label evaluation: registry fetcher, ground truth, scorers (server, and
+                        the browser-only path in headless Chrome), report
+tests/                  unit, API, vision (mocked), real-label regression, end-to-end and browser/server parity tests
+  js/                   Node runners for the parity tests
 ```
 
 ## Tools used
 
-Python 3.12, FastAPI, Tesseract 5 via `pytesseract`, OpenCV and Pillow for image processing, RapidFuzz for fuzzy matching, and the Anthropic Python SDK for the optional AI reader. The front end is plain HTML/CSS/JavaScript. Tests use pytest. The sample labels are rendered with Pillow and "photographed" with OpenCV.
+Python 3.12, FastAPI, Tesseract 5 via `pytesseract`, OpenCV and Pillow for image processing, RapidFuzz for fuzzy matching, and the Anthropic Python SDK for the optional AI reader. The front end is plain HTML/CSS/JavaScript, with [tesseract.js](https://github.com/naptha/tesseract.js) 7.0.0 and the [tessdata_fast](https://github.com/tesseract-ocr/tessdata_fast) English model for reading in the browser. Tests use pytest, and Node.js for the parity tests. The sample labels are rendered with Pillow and "photographed" with OpenCV. Accessibility was checked with axe-core.

@@ -249,6 +249,21 @@ def test_abv_without_percent_sign_needs_review():
     assert "% sign" in abv.message
 
 
+def test_a_reading_of_only_the_proof_does_not_hide_a_missing_percent_sign():
+    """Belle Isle in the browser: one pass read "107 PROOF" but not the "53.5 ALC/VOL" next to it.
+    A matching proof says nothing about the % sign, so the label still needs a look."""
+    app = APP.model_copy(update={"alcohol_content": "53.5% Alc./Vol. (107 Proof)"})
+    bare = LABEL.replace("45% Alc./Vol. (90 Proof)", "53.5 ALC/VOL 107 PROOF")
+    proof_only = LABEL.replace("45% Alc./Vol. (90 Proof)", "107 PROOF")
+    abv = next(c for c in verify(app, [ocr(bare), ocr(proof_only, name="ocr:enhanced")]) if c.field == "alcohol_content")
+    assert abv.status == Status.REVIEW
+    assert "% sign" in abv.message
+    # A reading that does show the % sign still confirms it: the other pass just missed it.
+    with_percent = LABEL.replace("45% Alc./Vol. (90 Proof)", "53.5% ALC/VOL 107 PROOF")
+    abv = next(c for c in verify(app, [ocr(bare), ocr(with_percent, name="ocr:layout")]) if c.field == "alcohol_content")
+    assert abv.status == Status.PASS
+
+
 def test_confusable_digits_are_review_even_when_read_twice():
     """Unbound: Tesseract reads a "13%" in Arial as "18%" on every pass."""
     app = APP.model_copy(update={"alcohol_content": "13% Alc./Vol."})

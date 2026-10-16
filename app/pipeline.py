@@ -20,6 +20,7 @@ from time import perf_counter
 import numpy as np
 
 from app.config import Settings
+from app.extraction.browser import evidence_from_reading
 from app.extraction.ocr import BLOCK_CONFIG, detect_rotation, read_text
 from app.extraction.vision import VisionReader, VisionUnavailable
 from app.imaging import (
@@ -31,7 +32,13 @@ from app.imaging import (
     quality_notices,
     to_gray,
 )
-from app.models import Application, CheckResult, Status, VerificationResult
+from app.models import (
+    Application,
+    BrowserReadings,
+    CheckResult,
+    Status,
+    VerificationResult,
+)
 from app.verification.evidence import Evidence
 from app.verification.rules import overall, verify
 from app.verification.text import loose
@@ -153,6 +160,22 @@ class Verifier:
         self.settings = settings
         self.vision = vision if settings.vision_enabled else None
         self.pool = ThreadPoolExecutor(max_workers=settings.ocr_workers, thread_name_prefix="ocr")
+
+    def verify_readings(self, readings: BrowserReadings) -> VerificationResult:
+        """Apply the rules to what the browser's text scanner read. No picture is involved."""
+        started = perf_counter()
+        evidences = [evidence_from_reading(r) for r in readings.readings]
+        checks = verify(readings.application, evidences)
+        status, headline = overall(checks)
+        rules_s = perf_counter() - started
+        return VerificationResult(
+            overall=status,
+            headline=headline,
+            checks=checks,
+            engines=["ocr:browser"],
+            elapsed_ms=readings.ocr_ms + round(rules_s * 1000),
+            timings_ms={"browser_ocr": readings.ocr_ms, "rules": round(rules_s * 1000)},
+        )
 
     async def verify(self, uploads: list[bytes], app: Application) -> VerificationResult:
         """Raises imaging.ImageError if an upload is not a readable picture."""

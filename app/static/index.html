@@ -14,16 +14,18 @@
     <div class="wrap masthead-inner">
       <svg class="logo" viewBox="0 0 32 32" aria-hidden="true"><rect width="32" height="32" rx="7"/><path d="M9 16.5l4.5 4.5L23 11"/></svg>
       <div>
-        <p class="app-name">Label Check</p>
+        <h1 class="app-name">Label Check</h1>
         <p class="tagline">Compare an alcohol label with its application</p>
       </div>
     </div>
   </header>
 
-  <nav class="wrap tabs" role="tablist" aria-label="Select a task">
-    <button role="tab" id="tab-single" aria-controls="panel-single" aria-selected="true">Check one label</button>
-    <button role="tab" id="tab-batch" aria-controls="panel-batch" aria-selected="false" tabindex="-1">Check many labels</button>
-    <button role="tab" id="tab-help" aria-controls="panel-help" aria-selected="false" tabindex="-1">How it works</button>
+  <nav class="wrap" aria-label="Tasks">
+    <div class="tabs" role="tablist" aria-label="Select a task">
+      <button role="tab" id="tab-single" aria-controls="panel-single" aria-selected="true">Check one label</button>
+      <button role="tab" id="tab-batch" aria-controls="panel-batch" aria-selected="false" tabindex="-1">Check many labels</button>
+      <button role="tab" id="tab-help" aria-controls="panel-help" aria-selected="false" tabindex="-1">How it works</button>
+    </div>
   </nav>
 
   <main id="main" class="wrap">
@@ -34,7 +36,7 @@
           <fieldset class="card">
             <legend><span class="step" aria-hidden="true">1</span> The label picture</legend>
             <div class="dropzone" id="single-drop">
-              <input type="file" id="single-files" accept="image/*,.tif,.tiff" multiple class="visually-hidden" tabindex="-1">
+              <input type="file" id="single-files" accept="image/*,.tif,.tiff" multiple class="visually-hidden" tabindex="-1" aria-label="Label pictures">
               <div class="dz-empty">
                 <svg class="dz-icon" viewBox="0 0 48 48" aria-hidden="true"><path d="M8 34l10-12 8 9 6-7 8 10H8z"/><circle cx="31" cy="15" r="4"/><rect x="3" y="5" width="42" height="38" rx="5" fill="none"/></svg>
                 <p class="dz-title">Drag the label picture here</p>
@@ -101,8 +103,9 @@
         </div>
       </form>
 
+      <p id="single-status" class="visually-hidden" role="status"></p>
       <p id="single-error" class="error-banner" role="alert" hidden></p>
-      <section id="single-result" class="result" aria-live="polite" hidden></section>
+      <section id="single-result" class="result" aria-labelledby="single-result-heading" hidden></section>
     </section>
 
     <!-- ============ MANY LABELS ============ -->
@@ -111,8 +114,8 @@
         <div class="card">
           <h2 class="card-title"><span class="step" aria-hidden="true">1</span> The label pictures</h2>
           <div class="dropzone" id="batch-drop">
-            <input type="file" id="batch-files" accept="image/*,.tif,.tiff" multiple class="visually-hidden" tabindex="-1">
-            <input type="file" id="batch-folder" webkitdirectory multiple class="visually-hidden" tabindex="-1">
+            <input type="file" id="batch-files" accept="image/*,.tif,.tiff" multiple class="visually-hidden" tabindex="-1" aria-label="Label pictures">
+            <input type="file" id="batch-folder" webkitdirectory multiple class="visually-hidden" tabindex="-1" aria-label="Folder of label pictures">
             <div class="dz-empty">
               <svg class="dz-icon" viewBox="0 0 48 48" aria-hidden="true"><rect x="9" y="3" width="34" height="30" rx="4" fill="none"/><rect x="5" y="9" width="34" height="30" rx="4"/><path d="M10 33l8-9 6 6 4-4 7 7H10z" class="dz-icon-cut"/></svg>
               <p class="dz-title">Drag all the label pictures here</p>
@@ -122,24 +125,24 @@
                 <button type="button" class="btn secondary" data-pick="batch-folder">Choose a folder…</button>
               </div>
             </div>
-            <p class="dz-count" id="batch-file-count" hidden></p>
+            <p class="dz-count" id="batch-file-count" role="status" hidden></p>
           </div>
         </div>
         <div class="card">
           <h2 class="card-title"><span class="step" aria-hidden="true">2</span> The spreadsheet of applications</h2>
           <p>Use a CSV file that has one row for each application. In the <code>label_file</code> column, write the file name of each picture. Put a <code>;</code> between two or more file names.</p>
           <div class="btn-row">
-            <button type="button" class="btn secondary" data-pick="batch-csv">Choose spreadsheet (CSV)…</button>
+            <button type="button" class="btn secondary" data-pick="batch-csv">Choose spreadsheet (CSV)</button>
             <a class="btn quiet" href="/samples/batch_applications.csv" download="applications_template.csv">Download an example</a>
           </div>
-          <input type="file" id="batch-csv" accept=".csv,text/csv" class="visually-hidden" tabindex="-1">
-          <p class="dz-count" id="batch-csv-name" hidden></p>
+          <input type="file" id="batch-csv" accept=".csv,text/csv" class="visually-hidden" tabindex="-1" aria-label="Spreadsheet of applications">
+          <p class="dz-count" id="batch-csv-name" role="status" hidden></p>
           <p class="hint">If you do not have a spreadsheet, the tool examines only the government warning, the alcohol content, and the net contents.</p>
         </div>
       </div>
 
       <div class="card batch-plan" id="batch-plan" hidden>
-        <p id="batch-summary"></p>
+        <p id="batch-summary" role="status"></p>
         <details id="batch-unmatched" hidden><summary></summary><ul></ul></details>
       </div>
 
@@ -149,7 +152,8 @@
         <button class="btn quiet" type="button" id="batch-reset" hidden>Start over</button>
       </div>
 
-      <section id="batch-progress" class="card" hidden aria-live="polite">
+      <section id="batch-progress" class="card" hidden>
+        <p id="batch-status" class="visually-hidden" role="status"></p>
         <div class="progress-head">
           <p id="batch-progress-text">The check started.</p>
           <button class="btn quiet" type="button" id="batch-stop">Stop</button>
@@ -178,7 +182,7 @@
         <ol>
           <li>Add a picture of the label. You can use a scan or a photograph. An angle or glare in the picture is permitted.</li>
           <li>Type the data from the application. To skip an item, leave its box empty.</li>
-          <li>Click “Check label”. The results usually come in 1 to 3 seconds.</li>
+          <li>Click “Check label”. The results usually come in 1 to 5 seconds.</li>
         </ol>
         <h3>What the results mean</h3>
         <ul class="legend">
@@ -186,7 +190,7 @@
           <li><span class="badge review">! Examine</span> The tool is not sure. For example, the text is hard to read, or it is almost the same. Examine the label yourself.</li>
           <li><span class="badge fail">✕ Problem</span> The tool found a conflict. For example, the label shows a different number, or the warning text is not word-for-word.</li>
         </ul>
-        <p>Click a result to see where the tool found it on the label.</p>
+        <p>Click “Show on the label” to see where the tool found an item. Click a picture to see it larger.</p>
         <h3>What the tool compares</h3>
         <ul>
           <li>Brand name, class or type, bottler, and country of origin. Differences in capital letters and punctuation are permitted, for example “STONE'S THROW” and “Stone's Throw”. If the text is almost the same, the result is Examine.</li>
@@ -197,7 +201,9 @@
         <ul>
           <li>The tool gives advice. The agent makes the decision.</li>
           <li>The tool does not keep the pictures or the application data. When the check is completed, the tool erases them.</li>
-          <li>The tool reads the labels on this server. If the network blocks outside services, the tool continues to operate.</li>
+          <li>The tool reads the labels in your browser. If the browser cannot confirm all items, the tool sends the pictures to this server, and the server reads them again with more methods.</li>
+          <li>If the server does not answer, the browser does all of the work.</li>
+          <li>The tool does not use outside services. If the network blocks them, the tool continues to operate.</li>
         </ul>
       </div>
     </section>
@@ -210,11 +216,28 @@
 
   <template id="tpl-thumb">
     <li class="thumb">
-      <img alt="">
+      <button type="button" class="thumb-open" title="Show a larger picture">
+        <img alt="">
+        <svg class="zoom-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="10" cy="10" r="6"/><path d="M14.5 14.5L20 20M10 7.5v5M7.5 10h5"/></svg>
+      </button>
       <span class="thumb-name"></span>
       <button type="button" class="thumb-remove" aria-label="Remove picture">✕</button>
     </li>
   </template>
+
+  <dialog id="picture-dialog" class="picture-dialog" aria-labelledby="picture-dialog-name">
+    <div class="picture-dialog-head">
+      <div>
+        <p id="picture-dialog-name" class="picture-dialog-name"></p>
+        <p class="picture-dialog-hint">Click the picture to change its size.</p>
+      </div>
+      <div class="btn-row">
+        <button type="button" class="btn secondary" id="picture-dialog-size" aria-pressed="false">Full size</button>
+        <button type="button" class="btn secondary" id="picture-dialog-close" autofocus>Close</button>
+      </div>
+    </div>
+    <div class="picture-dialog-body"></div>
+  </dialog>
 
   <script src="/static/app.js" type="module"></script>
 </body>

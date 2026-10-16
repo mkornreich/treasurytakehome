@@ -1,11 +1,15 @@
-# One-click deploy on Render: New > Blueprint > pick this repository.
+# Render Blueprint: Dashboard > New > Blueprint > pick this repository.
+#
+# No plan is set, so Render uses its default 0.5 CPU / 512 MB instance ("0.5c-512mb").
+# Measured on that size: 0.5-2.8 s per label, four at once in about 3 s, ~250 MB memory.
+# The free instance is too slow for the 5-second target and sleeps when idle.
+#
+# The app runs on local OCR only. To enable the optional AI reader later, add an
+# ANTHROPIC_API_KEY environment variable to the service in the Render Dashboard.
 services:
   - type: web
     name: label-check
     runtime: docker
-    plan: starter
+    region: virginia
     healthCheckPath: /api/health
-    envVars:
-      # Optional: set to enable the AI reader for hard-to-read photos.
-      - key: ANTHROPIC_API_KEY
-        sync: false
+    autoDeployTrigger: commit

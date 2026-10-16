@@ -243,7 +243,7 @@ Regenerate them with `uv run python samples/generate_labels.py`. Real photos and
 
 The app is one stateless container, so any container host works. 1 vCPU / 1 GB RAM is enough: each label takes ≤1.5 s on one CPU. More CPUs speed up batches.
 
-- **Render:** *New → Blueprint →* select this repository ([`render.yaml`](render.yaml) is included). Optionally add `ANTHROPIC_API_KEY`. Use the Starter plan or larger: the free tier's 0.1 CPU is too slow for the 5-second target.
+- **Render:** *New → Blueprint →* select this repository ([`render.yaml`](render.yaml) is included). It uses Render's default 0.5 CPU / 512 MB instance, which checks a label in 0.5–2.8 s and four at once in about 3 s. The free instance is too slow for the 5-second target. To enable the AI reader, add `ANTHROPIC_API_KEY` under the service's *Environment* settings.
 - **Azure Container Apps** (matches the agency's Azure environment):
 
   ```bash

@@ -1,0 +1,10 @@
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+.env
+# The assignment brief, cloned from treasurytakehome-rgb/instructions (kept out of this repo)
+instructions/
+eval/real_labels/
+# Local tool configuration
+.claude/

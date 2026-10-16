@@ -1,0 +1,11 @@
+# One-click deploy on Render: New > Blueprint > pick this repository.
+services:
+  - type: web
+    name: label-check
+    runtime: docker
+    plan: starter
+    healthCheckPath: /api/health
+    envVars:
+      # Optional: set to enable the AI reader for hard-to-read photos.
+      - key: ANTHROPIC_API_KEY
+        sync: false

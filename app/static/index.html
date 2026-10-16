@@ -1,0 +1,218 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Label Check</title>
+  <meta name="description" content="Compare an alcohol beverage label with its application in seconds.">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%231f3a5f'/%3E%3Cpath d='M9 16.5l4.5 4.5L23 11' stroke='white' stroke-width='3.2' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
+  <link rel="stylesheet" href="/static/app.css">
+</head>
+<body>
+  <a class="skip" href="#main">Skip to main content</a>
+  <header class="masthead">
+    <div class="wrap masthead-inner">
+      <svg class="logo" viewBox="0 0 32 32" aria-hidden="true"><rect width="32" height="32" rx="7"/><path d="M9 16.5l4.5 4.5L23 11"/></svg>
+      <div>
+        <p class="app-name">Label Check</p>
+        <p class="tagline">Compare an alcohol label with its application</p>
+      </div>
+    </div>
+  </header>
+
+  <nav class="wrap tabs" role="tablist" aria-label="What would you like to do?">
+    <button role="tab" id="tab-single" aria-controls="panel-single" aria-selected="true">Check one label</button>
+    <button role="tab" id="tab-batch" aria-controls="panel-batch" aria-selected="false" tabindex="-1">Check many labels</button>
+    <button role="tab" id="tab-help" aria-controls="panel-help" aria-selected="false" tabindex="-1">How it works</button>
+  </nav>
+
+  <main id="main" class="wrap">
+    <!-- ============ ONE LABEL ============ -->
+    <section id="panel-single" role="tabpanel" aria-labelledby="tab-single">
+      <form id="single-form" novalidate>
+        <div class="grid-two">
+          <fieldset class="card">
+            <legend><span class="step" aria-hidden="true">1</span> The label picture</legend>
+            <div class="dropzone" id="single-drop">
+              <input type="file" id="single-files" accept="image/*,.tif,.tiff" multiple class="visually-hidden" tabindex="-1">
+              <div class="dz-empty">
+                <svg class="dz-icon" viewBox="0 0 48 48" aria-hidden="true"><path d="M8 34l10-12 8 9 6-7 8 10H8z"/><circle cx="31" cy="15" r="4"/><rect x="3" y="5" width="42" height="38" rx="5" fill="none"/></svg>
+                <p class="dz-title">Drag the label picture here</p>
+                <p class="dz-or">or</p>
+                <button type="button" class="btn secondary" data-pick="single-files">Choose picture…</button>
+              </div>
+              <ul class="thumbs" id="single-thumbs" aria-label="Pictures added"></ul>
+            </div>
+            <p class="hint">If the government warning is on the back label, add the back picture too.</p>
+            <div class="sample-row">
+              <label for="sample-select">No picture handy? Try a sample:</label>
+              <select id="sample-select"><option value="">Choose a sample label…</option></select>
+            </div>
+          </fieldset>
+
+          <fieldset class="card">
+            <legend><span class="step" aria-hidden="true">2</span> What the application says</legend>
+            <div class="field">
+              <span class="label" id="type-label">Type of product</span>
+              <div class="segmented" role="radiogroup" aria-labelledby="type-label">
+                <label><input type="radio" name="beverage_type" value="spirits" checked><span>Spirits</span></label>
+                <label><input type="radio" name="beverage_type" value="wine"><span>Wine</span></label>
+                <label><input type="radio" name="beverage_type" value="beer"><span>Beer / malt</span></label>
+              </div>
+            </div>
+            <div class="field">
+              <label for="f-brand_name">Brand name</label>
+              <input id="f-brand_name" name="brand_name" autocomplete="off" placeholder="OLD TOM DISTILLERY">
+            </div>
+            <div class="field">
+              <label for="f-class_type">Class / type</label>
+              <input id="f-class_type" name="class_type" autocomplete="off" placeholder="Kentucky Straight Bourbon Whiskey">
+            </div>
+            <div class="field-pair">
+              <div class="field">
+                <label for="f-alcohol_content">Alcohol content</label>
+                <input id="f-alcohol_content" name="alcohol_content" autocomplete="off" placeholder="45% Alc./Vol. (90 Proof)">
+              </div>
+              <div class="field">
+                <label for="f-net_contents">Net contents</label>
+                <input id="f-net_contents" name="net_contents" autocomplete="off" placeholder="750 mL">
+              </div>
+            </div>
+            <div class="field">
+              <label for="f-bottler">Bottler / producer name and address</label>
+              <input id="f-bottler" name="bottler" autocomplete="off" placeholder="Old Tom Distillery, Bardstown, KY">
+            </div>
+            <div class="field">
+              <label for="f-country_of_origin">Country of origin <span class="optional">(imports only)</span></label>
+              <input id="f-country_of_origin" name="country_of_origin" autocomplete="off" placeholder="France">
+            </div>
+            <p class="hint">Leave a box empty to skip that check. The government warning is always checked.</p>
+          </fieldset>
+        </div>
+
+        <div class="actions">
+          <button class="btn primary big" type="submit" id="check-btn">
+            <span class="btn-label">Check label</span>
+          </button>
+          <button type="button" class="btn quiet" id="clear-btn">Start over</button>
+        </div>
+      </form>
+
+      <p id="single-error" class="error-banner" role="alert" hidden></p>
+      <section id="single-result" class="result" aria-live="polite" hidden></section>
+    </section>
+
+    <!-- ============ MANY LABELS ============ -->
+    <section id="panel-batch" role="tabpanel" aria-labelledby="tab-batch" hidden>
+      <div class="grid-two">
+        <div class="card">
+          <h2 class="card-title"><span class="step" aria-hidden="true">1</span> The label pictures</h2>
+          <div class="dropzone" id="batch-drop">
+            <input type="file" id="batch-files" accept="image/*,.tif,.tiff" multiple class="visually-hidden" tabindex="-1">
+            <input type="file" id="batch-folder" webkitdirectory multiple class="visually-hidden" tabindex="-1">
+            <div class="dz-empty">
+              <svg class="dz-icon" viewBox="0 0 48 48" aria-hidden="true"><rect x="9" y="3" width="34" height="30" rx="4" fill="none"/><rect x="5" y="9" width="34" height="30" rx="4"/><path d="M10 33l8-9 6 6 4-4 7 7H10z" class="dz-icon-cut"/></svg>
+              <p class="dz-title">Drag all the label pictures here</p>
+              <p class="dz-or">or</p>
+              <div class="btn-row">
+                <button type="button" class="btn secondary" data-pick="batch-files">Choose pictures…</button>
+                <button type="button" class="btn secondary" data-pick="batch-folder">Choose a folder…</button>
+              </div>
+            </div>
+            <p class="dz-count" id="batch-file-count" hidden></p>
+          </div>
+        </div>
+        <div class="card">
+          <h2 class="card-title"><span class="step" aria-hidden="true">2</span> The applications spreadsheet</h2>
+          <p>A CSV file with one row per application. The <code>label_file</code> column names the picture (use <code>;</code> between several pictures).</p>
+          <div class="btn-row">
+            <button type="button" class="btn secondary" data-pick="batch-csv">Choose spreadsheet (CSV)…</button>
+            <a class="btn quiet" href="/samples/batch_applications.csv" download="applications_template.csv">Download an example</a>
+          </div>
+          <input type="file" id="batch-csv" accept=".csv,text/csv" class="visually-hidden" tabindex="-1">
+          <p class="dz-count" id="batch-csv-name" hidden></p>
+          <p class="hint">No spreadsheet? Pictures are still checked for the government warning, alcohol content and net contents.</p>
+        </div>
+      </div>
+
+      <div class="card batch-plan" id="batch-plan" hidden>
+        <p id="batch-summary"></p>
+        <details id="batch-unmatched" hidden><summary></summary><ul></ul></details>
+      </div>
+
+      <div class="actions">
+        <button class="btn primary big" type="button" id="batch-start" disabled>Start checking</button>
+        <button class="btn quiet" type="button" id="batch-sample">Load the sample batch</button>
+        <button class="btn quiet" type="button" id="batch-reset" hidden>Start over</button>
+      </div>
+
+      <section id="batch-progress" class="card" hidden aria-live="polite">
+        <div class="progress-head">
+          <p id="batch-progress-text">Checking…</p>
+          <button class="btn quiet" type="button" id="batch-stop">Stop</button>
+        </div>
+        <div class="progress" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" aria-labelledby="batch-progress-text"><div class="progress-bar" id="batch-bar"></div></div>
+      </section>
+
+      <section id="batch-results" hidden>
+        <div class="results-head">
+          <div class="filters" role="group" aria-label="Show">
+            <button type="button" class="chip" data-filter="all" aria-pressed="true">All <span></span></button>
+            <button type="button" class="chip chip-fail" data-filter="fail" aria-pressed="false">Problems <span></span></button>
+            <button type="button" class="chip chip-review" data-filter="review" aria-pressed="false">Needs review <span></span></button>
+            <button type="button" class="chip chip-pass" data-filter="pass" aria-pressed="false">All good <span></span></button>
+          </div>
+          <button type="button" class="btn secondary" id="batch-export" disabled>Download results (CSV)</button>
+        </div>
+        <ol class="batch-list" id="batch-list"></ol>
+      </section>
+    </section>
+
+    <!-- ============ HELP ============ -->
+    <section id="panel-help" role="tabpanel" aria-labelledby="tab-help" hidden>
+      <div class="card prose">
+        <h2>How Label Check works</h2>
+        <ol>
+          <li><strong>Add the label picture</strong> (a scan or a phone photo; angled or glare-y photos are fine).</li>
+          <li><strong>Type what the application says.</strong> Leave a box empty to skip it.</li>
+          <li><strong>Press “Check label”.</strong> Results usually appear in 1–3 seconds.</li>
+        </ol>
+        <h3>What the results mean</h3>
+        <ul class="legend">
+          <li><span class="badge pass">✓ OK</span> The label shows what the application says.</li>
+          <li><span class="badge review">! Check</span> The tool could not be sure: the text was hard to read, nearly matches, or differs only by accents. Please look yourself.</li>
+          <li><span class="badge fail">✕ Problem</span> The tool read something that conflicts: a different number, or warning wording that is not word-for-word.</li>
+        </ul>
+        <p>Click any result to highlight where it was found on the label.</p>
+        <h3>What is checked</h3>
+        <ul>
+          <li><strong>Brand name, class/type, bottler, country of origin</strong>: matched with judgment. Capitalization and punctuation differences (“STONE'S THROW” vs “Stone's Throw”) are accepted; near-misses are flagged for review.</li>
+          <li><strong>Alcohol content and net contents</strong>: compared by value, so “750 mL” matches “75 cl” and “12 FL. OZ.” matches “355 mL”. The proof must be twice the ABV.</li>
+          <li><strong>Government warning</strong>: must be word-for-word, with “GOVERNMENT WARNING:” in capital letters and bold (27 CFR 16.21–16.22).</li>
+        </ul>
+        <h3>Good to know</h3>
+        <ul>
+          <li>The tool advises; the agent decides.</li>
+          <li>Pictures and application details are not stored. They are discarded as soon as the check finishes.</li>
+          <li>Reading is done on this server, so it works even where outside services are blocked.</li>
+        </ul>
+      </div>
+    </section>
+  </main>
+
+  <footer class="wrap footer">
+    Prototype for evaluation. Results are advisory; a compliance agent makes the final decision. Uploads are not stored.
+    <span id="engine-note"></span>
+  </footer>
+
+  <template id="tpl-thumb">
+    <li class="thumb">
+      <img alt="">
+      <span class="thumb-name"></span>
+      <button type="button" class="thumb-remove" aria-label="Remove picture">✕</button>
+    </li>
+  </template>
+
+  <script src="/static/app.js" type="module"></script>
+</body>
+</html>

@@ -1,0 +1,14 @@
+label_file,beverage_type,brand_name,class_type,alcohol_content,net_contents,bottler,country_of_origin,notes
+01_old_tom_bourbon.png,spirits,OLD TOM DISTILLERY,Kentucky Straight Bourbon Whiskey,45% Alc./Vol. (90 Proof),750 mL,"Old Tom Distillery, Bardstown, KY",,Everything matches (the example from the brief).
+02_stones_throw_gin.png,spirits,Stone's Throw,London Dry Gin,41.2% ABV,1 L,"Stone's Throw Spirits Co., Portland, OR",,"Brand in capitals on the label, title case on the application: still a match."
+03_abv_mismatch.png,spirits,OLD TOM DISTILLERY,Kentucky Straight Bourbon Whiskey,45% Alc./Vol. (90 Proof),750 mL,"Old Tom Distillery, Bardstown, KY",,"Label says 40%, application says 45%."
+04_warning_title_case.png,spirits,RIVERBEND,Straight Rye Whisky,50% Alc./Vol.,750 mL,"Riverbend Distilling, Louisville, KY",,'Government Warning' in title case instead of capitals.
+05_warning_not_bold.png,spirits,HARBOR LIGHT,Spiced Rum,35% Alc./Vol.,750 mL,"Harbor Light Rum Co., Key West, FL",,"Heading 'GOVERNMENT WARNING:' printed in regular weight, not bold."
+06_warning_reworded.png,spirits,SILVER CREEK,Vodka,40% Alc./Vol.,1.75 L,"Silver Creek Spirits, Boise, ID",,"Warning wording altered (a phrase removed, 'impairs' changed)."
+07_imported_wine.png,wine,Château Belle Rive,Bordeaux Red Wine,13.5% Alc./Vol.,750 mL,"Imported by Vineyard Imports LLC, New York, NY",France,Imported wine; 'Château' (accent) on the application vs 'CHATEAU' on the label.
+08_craft_beer.png,beer,Hoppy Trails,India Pale Ale,6.8% ABV,355 mL,"Hoppy Trails Brewing Co., Bend, OR",,"Net contents in fluid ounces on the label, millilitres on the application."
+09_photo_angle_glare.jpg,spirits,OLD TOM DISTILLERY,Kentucky Straight Bourbon Whiskey,45% Alc./Vol. (90 Proof),750 mL,"Old Tom Distillery, Bardstown, KY",,"Photo taken at an angle, with glare and uneven lighting."
+10_net_contents_mismatch.png,spirits,NORTHERN PEAK,Blended Scotch Whisky,43% Alc./Vol.,750 mL,"Imported by Highland Trade Co., Boston, MA",Scotland,"Label says 700 mL, application says 750 mL."
+11_photo_sideways.jpg,spirits,OLD TOM DISTILLERY,Kentucky Straight Bourbon Whiskey,45% Alc./Vol. (90 Proof),750 mL,"Old Tom Distillery, Bardstown, KY",,Photo uploaded sideways (rotated 90 degrees).
+12_front_label.png;12_back_label.png,wine,WILLOW BEND,Pinot Noir,13.9% Alc./Vol.,750 mL,"Willow Bend Cellars, Dundee, OR",,"Two pictures: brand on the front label, warning on the back label."
+13_side_panel.png,beer,COPPER KETTLE,Amber Ale,5.5% ABV,16 fl oz,"Copper Kettle Brewing, Asheville, NC",,"Bottler and warning run vertically up a side strip, as on many cans."

@@ -9,14 +9,16 @@ duration of one request.
 from __future__ import annotations
 
 import csv
+import hashlib
 import json
 import logging
 from contextlib import asynccontextmanager
+from functools import cache
 from pathlib import Path
 from typing import Annotated
 
 from fastapi import FastAPI, File, Form, HTTPException, Request, UploadFile
-from fastapi.responses import FileResponse, JSONResponse, PlainTextResponse
+from fastapi.responses import HTMLResponse, JSONResponse, PlainTextResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import ValidationError
 
@@ -79,7 +81,20 @@ async def image_error(request: Request, exc: ImageError):
 
 @app.get("/", include_in_schema=False)
 async def index():
-    return FileResponse(STATIC / "index.html", headers={"Cache-Control": "no-cache"})
+    return HTMLResponse(versioned_index(), headers={"Cache-Control": "no-cache"})
+
+
+@cache
+def versioned_index() -> str:
+    """index.html with a content fingerprint on the page's own stylesheet and script
+    ("/static/app.js?v=1a2b3c4d5e6f"). Before October 2026 the server sent no caching rules
+    for them, so a browser could keep running an old app.js under a new page; with the
+    fingerprint, a new page always loads the code that belongs to it."""
+    html = (STATIC / "index.html").read_text(encoding="utf-8")
+    for name in ("app.css", "app.js"):
+        digest = hashlib.sha256((STATIC / name).read_bytes()).hexdigest()[:12]
+        html = html.replace(f'"/static/{name}"', f'"/static/{name}?v={digest}"')
+    return html
 
 
 @app.get("/robots.txt", include_in_schema=False)

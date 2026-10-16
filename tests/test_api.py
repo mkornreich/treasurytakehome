@@ -1,4 +1,5 @@
 import json
+import re
 import shutil
 
 import pytest
@@ -17,6 +18,16 @@ def client():
 def test_index_and_config(client):
     assert "Label Check" in client.get("/").text
     assert client.get("/api/config").json()["vision"] == "off"
+
+
+def test_page_links_its_own_css_and_js_by_content(client):
+    """A browser holding an old app.js must not run it under a new page."""
+    page = client.get("/")
+    assert page.headers["cache-control"] == "no-cache"
+    for name in ("app.css", "app.js"):
+        match = re.search(rf'"/static/{name}\?v=([0-9a-f]{{12}})"', page.text)
+        assert match, name
+        assert client.get(f"/static/{name}?v={match.group(1)}").status_code == 200
 
 
 def test_robots_blocks_all_crawlers(client):

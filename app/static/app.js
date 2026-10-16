@@ -216,7 +216,7 @@ async function checkLabel(files, application, { batch = false } = {}) {
 /** Fit the picture on the screen, or show it at full size (scroll to see all of it). */
 function setFullSize(full) {
   $(".picture-dialog-body").classList.toggle("full-size", full);
-  $("#picture-dialog-size").setAttribute("aria-pressed", String(full));
+  $("#picture-dialog-size").textContent = full ? "Regular size" : "Full size"; // the button says what it will do
 }
 
 /** Show a picture as large as the screen permits. `highlights` are copies of the result boxes. */
@@ -233,7 +233,7 @@ function showLarger(url, name, highlights = []) {
 function setupPictureDialog() {
   const dialog = $("#picture-dialog");
   $("#picture-dialog-close").addEventListener("click", () => dialog.close());
-  $("#picture-dialog-size").addEventListener("click", (e) => setFullSize(e.currentTarget.getAttribute("aria-pressed") !== "true"));
+  $("#picture-dialog-size").addEventListener("click", () => setFullSize(!$(".picture-dialog-body").classList.contains("full-size")));
   dialog.addEventListener("click", (e) => { if (e.target === dialog) dialog.close(); }); // a click on the dark area
 }
 

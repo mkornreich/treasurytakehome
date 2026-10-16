@@ -211,7 +211,7 @@ The target is [WCAG 2.2](https://www.w3.org/WAI/standards-guidelines/wcag/) Leve
   - nothing scrolls sideways at 320 px wide (1.4.10);
   - no text is cut off with WCAG's text-spacing values (1.4.12);
   - every control is at least 24 × 24 px (2.5.8).
-- **Keyboard:** everything works without a mouse, with a dark focus ring. Each result card has a *Show on the label* toggle button, and the card itself is no longer a button that holds other controls. The picture viewer is a modal dialog with *Full size* and *Close* buttons, Esc closes it, and focus goes back to where it was.
+- **Keyboard:** everything works without a mouse, with a dark focus ring. Each result card has a *Show on the label* toggle button, and the card itself is no longer a button that holds other controls. The picture viewer is a modal dialog with a *Full size* button (it then says *Regular size*) and *Close*; Esc closes it, and focus goes back to where it was.
 - **Screen readers:**
   - one `h1`, a heading for each section, and landmarks;
   - labelled controls;

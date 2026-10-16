@@ -2,13 +2,14 @@
 
 Label Check compares a picture of an alcohol beverage label with what the applicant typed into the COLA application, and says in plain language what matches, what doesn't, and what a person should look at. It handles one label at a time or a few hundred at once.
 
-**Deployed prototype:** <https://label-check-fz5a.onrender.com>
+**Deployed prototype:** <https://labelcheck.mkornreich.me> (also at <https://label-check-fz5a.onrender.com>)
 
 - **Fast.** Clean labels come back in about 0.3 s. Angled, glary or sideways phone photos take 1–2 s. Real approved labels from the TTB registry take 3.1 s median and 3.8 s at worst, on a single CPU.
-- **Tested on real labels.** On 21 approved labels from TTB's Public COLA Registry, it raised **no false rejections** and **missed nothing**, including every deliberately tampered value. 78% of checks were confirmed automatically; the rest were honestly marked "Check". See [eval/REPORT.md](eval/REPORT.md).
+- **Tested on real labels.** On 21 approved labels from TTB's Public COLA Registry, it raised **no false rejections** and **missed nothing**, including every deliberately tampered value. 78% of checks were confirmed automatically; the rest were honestly marked "Examine". See [eval/REPORT.md](eval/REPORT.md).
 - **Works behind the firewall.** Reading is done by Tesseract OCR on the server itself, and the page loads nothing from outside sites. An optional AI reader (Claude vision) can help with hard photos when the network allows it, but the app never depends on it.
 - **Judgment, not just string matching.** "STONE'S THROW" matches "Stone's Throw". "750 mL" matches "75 cl", and "12 FL. OZ." matches "355 mL". A missing accent or a near-miss is sent to a person, not rejected.
 - **Strict where the rules are strict.** The government warning must be word-for-word, with "GOVERNMENT WARNING:" in capitals and bold. The tool shows a word-level diff when it isn't.
+- **Plain, controlled language.** All text on the page, including every result message, follows ASD-STE100 Simplified Technical English: short sentences, approved verbs, one word for one meaning. It was checked with the [SimpleEnglish](https://github.com/AminBlg/SimpleEnglish) STE linter; no tool can guarantee full compliance.
 - **Simple to use.** Large text, one obvious button per step, and results in sentences ("Label shows 40%; the application says 45%"). Click any result to see where it was found on the label.
 - **Batch mode.** Drop in a folder of pictures plus a CSV of applications. The results stream in as each label finishes, can be filtered to problems, and can be downloaded as a CSV.
 - **Nothing is stored.** Pictures and application data exist in memory for the length of one request.
@@ -27,7 +28,7 @@ docker build -t label-check .
 docker run --rm -p 8000:8000 label-check
 ```
 
-Open <http://localhost:8000>. Pick a sample label from **"No picture handy? Try a sample"**, or open **Check many labels → Load the sample batch**.
+Open <http://localhost:8000>. Pick a sample label from **"If you do not have a picture, use a sample"**, or open **Check many labels → Use the sample labels**.
 
 ### Without Docker
 
@@ -74,7 +75,7 @@ The first command downloads 21 approved labels from TTB's Public COLA Registry. 
 | Result | Meaning |
 |---|---|
 | ✓ **OK** | The label shows what the application says. |
-| ! **Check** | The tool could not be sure: the text was unreadable, a near-match, differs only by accents, or the two readers disagree. A person should look. |
+| ! **Examine** | The tool could not be sure: the text was unreadable, a near-match, differs only by accents, or the two readers disagree. A person should look. |
 | ✕ **Problem** | The tool read something that conflicts with the application or the rules: a different number, or warning wording that is not word-for-word. |
 
 ### Many labels
@@ -95,7 +96,7 @@ The first command downloads 21 approved labels from TTB's Public COLA Registry. 
    | `application_id` (optional) | carried through to the results CSV |
 
    Common alternative headers (`brand`, `abv`, `filename`, …) and semicolon-separated files from European Excel are accepted. Without a spreadsheet, each picture is still checked for the warning, alcohol content and net contents.
-3. Press *Start checking*. Four labels are checked at a time, with progress and a time-left estimate. Filter to *Problems* or *Needs review*, open any row for the full result, and use *Download results (CSV)* for the record.
+3. Press *Check N labels*. Four labels are checked at a time, with progress and a time-left estimate. Filter to *Problems* or *Examine*, open any row for the full result, and use *Download results (CSV)* for the record.
 
 ---
 
@@ -130,15 +131,15 @@ The rules are deterministic. **The AI reads; the rules decide**, so every outcom
 
 | Check | Rule |
 |---|---|
-| Brand name, class/type | Fuzzy search over everything read, ignoring case, punctuation and spacing. Exact → OK, with a note when only the capitalization differs. Accent-only difference or ≥90 % similar → Check. Not found → Check, because OCR missing a decorative font is not evidence the label is wrong. Only the AI reader's explicit, different reading of the field → Problem. |
+| Brand name, class/type | Fuzzy search over everything read, ignoring case, punctuation and spacing. Exact → OK, with a note when only the capitalization differs. Accent-only difference or ≥90 % similar → Examine. Not found → Examine, because OCR missing a decorative font is not evidence the label is wrong. Only the AI reader's explicit, different reading of the field → Problem. |
 | Bottler, country of origin | As above, and the application text may sit inside a longer statement ("Bottled by …", "Product of France"). Name and town are matched separately, so a street address printed between them is fine. State abbreviations are normalized ("Bardstown, KY" = "Bardstown, Kentucky"). An origin statement naming another country ("Produced and bottled in Italy" when the application says France) is reported. |
-| Alcohol content | Compared by value: 45 % = "45.0% ABV". A different percentage on the label → Problem. A proof on the label must equal the application's proof, and must be twice the ABV. A number printed without its % sign ("53.5 ALC/VOL") → Check. "100% agave" is not mistaken for the alcohol statement. |
+| Alcohol content | Compared by value: 45 % = "45.0% ABV". A different percentage on the label → Problem. A proof on the label must equal the application's proof, and must be twice the ABV. A number printed without its % sign ("53.5 ALC/VOL") → Examine. "100% agave" is not mistaken for the alcohol statement. |
 | Net contents | Converted to millilitres, so mL, cl, L, fl oz, pints, quarts and gallons all compare (1 % tolerance for rounded conversions). A different volume → Problem. |
-| Government warning: wording | The statement is located by fuzzy alignment, then compared word by word with 27 CFR 16.21. Missing, added or changed words → Problem, with a diff. Things a scanner gets wrong are a Check instead: a one-letter difference inside a word ("rnachinery"), digit-for-letter swaps ("T0"), an unreadable "(1)", a dropped short word, punctuation, or stray marks. Spacing and hyphenation ("ABILITYTO", "wom- en") are ignored. All-caps body text is accepted. |
-| Government warning: capitals | "GOVERNMENT WARNING" must be uppercase ("Government Warning" → Problem). A missing colon → Check. The heading is located separately from the body, so a heading on its own line that OCR reads out of order still counts. |
-| Government warning: bold | Bold → OK. Not bold → Check, or Problem when both readers agree it isn't bold. |
+| Government warning: wording | The statement is located by fuzzy alignment, then compared word by word with 27 CFR 16.21. Missing, added or changed words → Problem, with a diff. Things a scanner gets wrong are an Examine result instead: a one-letter difference inside a word ("rnachinery"), digit-for-letter swaps ("T0"), an unreadable "(1)", a dropped short word, punctuation, or stray marks. Spacing and hyphenation ("ABILITYTO", "wom- en") are ignored. All-caps body text is accepted. |
+| Government warning: capitals | "GOVERNMENT WARNING" must be uppercase ("Government Warning" → Problem). A missing colon → Examine. The heading is located separately from the body, so a heading on its own line that OCR reads out of order still counts. |
+| Government warning: bold | Bold → OK. Not bold → Examine, or Problem when both readers agree it isn't bold. |
 
-**Several readers, one answer.** A field is OK if *any* reader (any OCR pass, any picture, the AI) confirmed it, because OCR never invents an exact match. It is a Problem only if a conflict was seen by **two separate readings**, or by the AI reader, and nothing confirmed the application. A conflict seen once ("150 ML" where the label says 750) is a possible misread and needs review. So does a conflict between digits Tesseract often confuses (3/8, 5/6, 1/7…), even when it is read twice. This is what took false rejections on real labels from 24 to zero. The warning has one extra safeguard: if the AI reader and OCR disagree on pass vs. fail, and OCR read the statement clearly, the result becomes **Check**. That catches a model that silently "fixes" a non-compliant warning, which is the failure mode that matters most here.
+**Several readers, one answer.** A field is OK if *any* reader (any OCR pass, any picture, the AI) confirmed it, because OCR never invents an exact match. It is a Problem only if a conflict was seen by **two separate readings**, or by the AI reader, and nothing confirmed the application. A conflict seen once ("150 ML" where the label says 750) is a possible misread and needs review. So does a conflict between digits Tesseract often confuses (3/8, 5/6, 1/7…), even when it is read twice. This is what took false rejections on real labels from 24 to zero. The warning has one extra safeguard: if the AI reader and OCR disagree on pass vs. fail, and OCR read the statement clearly, the result becomes **Examine**. That catches a model that silently "fixes" a non-compliant warning, which is the failure mode that matters most here.
 
 ---
 
@@ -147,7 +148,7 @@ The rules are deterministic. **The AI reads; the rules decide**, so every outcom
 | What we heard | What was built |
 |---|---|
 | "If we can't get results back in about 5 seconds, nobody's going to use it." (Sarah) | Local OCR with early exit: ~0.3 s for clean labels, 1–2 s for hard photos. The AI reader is only consulted when OCR can't confirm everything, and gets a hard 4.5 s deadline. If it is slow or unreachable, the answer comes from OCR with a notice. Large photos are shrunk in the browser before upload. |
-| "Something my mother could figure out." Half the team is over 50. (Sarah, Dave) | 18 px base type, high contrast, numbered steps, one primary button, results as sentences with ✓/!/✕ *and* words (never colour alone), click-to-highlight on the label, a "Look at:" jump list in the verdict, keyboard and screen-reader friendly, works on a phone. |
+| "Something my mother could figure out." Half the team is over 50. (Sarah, Dave) | 18 px base type, high contrast, numbered steps, one primary button, results as sentences with ✓/!/✕ *and* words (never colour alone), click-to-highlight on the label, an "Examine:" jump list in the verdict, keyboard and screen-reader friendly, works on a phone. |
 | Batch uploads of 200–300 labels. (Sarah, Janet) | *Check many labels*: a folder of pictures plus a CSV, four at a time, live progress with a time estimate, filters, and CSV export. The server stays stateless, so nothing is queued or stored on it. |
 | Outbound traffic to many domains is blocked. (Marcus) | All reading happens on the server; the page loads no CDN fonts or scripts. The AI reader is off unless configured, and any failure falls back to OCR. In production it could point at a model inside the agency's own Azure boundary (Claude is available through Microsoft Foundry). |
 | Not storing anything sensitive; PII considerations. (Marcus) | No database, no disk writes; uploads are processed in memory and discarded. Logs record only outcome and timing, never label or application content. |
@@ -217,11 +218,11 @@ Regenerate them with `uv run python samples/generate_labels.py`. Real photos and
 - The tool compares the **label against the application**, not against lab analysis. Values must therefore match exactly (45 % ≠ 45.5 %); the TTB tolerances for actual alcohol content don't apply.
 - Fields left blank on the application are not checked. Alcohol content and net contents are still reported if found, and a missing alcohol statement is flagged for spirits.
 - The warning text is the statutory one in 27 CFR 16.21. An all-caps body is acceptable; the heading must be capitals and bold.
-- When the tool can't read something, the answer is "Check", never a silent pass and never an automatic rejection. The agent always makes the final decision.
+- When the tool can't read something, the answer is "Examine", never a silent pass and never an automatic rejection. The agent always makes the final decision.
 
 ## Limitations and trade-offs
 
-- **OCR limits, measured.** On 21 real approved labels, 22% of checks still come back as *Check* although the label is fine ([eval/REPORT.md](eval/REPORT.md)). The causes:
+- **OCR limits, measured.** On 21 real approved labels, 22% of checks still come back as *Examine* although the label is fine ([eval/REPORT.md](eval/REPORT.md)). The causes:
   - script or ornate brand names;
   - net contents in tiny, condensed or light type;
   - warning punctuation and numbering that can't be confirmed at small sizes;
@@ -229,7 +230,7 @@ Regenerate them with `uv run python samples/generate_labels.py`. Real photos and
 
   Text curving around a bottle, embossing and very low-resolution images are also out of reach. The optional AI reader is much better at all of these; it is off by default only because of the firewall constraint.
 - **A one-letter typo looks like a misread.** One approved label prints "CONSUMTION". The tool shows the difference and asks for a look, but OCR alone can't tell a typo from its own slip, so it doesn't reject.
-- **Caution costs a little on clear-cut mismatches.** A conflicting value read only once becomes *Check* rather than *Problem*. In the tampered-label test, 6 of 21 changed alcohol values were flagged as *Check* instead of *Problem*; none were missed.
+- **Caution costs a little on clear-cut mismatches.** A conflicting value read only once becomes *Examine* rather than *Problem*. In the tampered-label test, 6 of 21 changed alcohol values were flagged as *Examine* instead of *Problem*; none were missed.
 - **Bold detection is a measurement, not a certainty.** On its own it can only flag "not bold" for review. Both readers must agree before it becomes a Problem. A heading in a much larger font than the body can look bold to the measurement even if it isn't.
 - **Not checked:** minimum type size (1/2/3 mm by container size; a photo has no physical scale), placement, contrast, and "separate and apart" rules. Also not checked: beverage-specific statements such as sulfites, appellation, vintage, age statements, colour additives and "table wine" alternatives, and whether a mention is in the brand position rather than elsewhere on the label.
 - **Batch runs in the browser.** Closing the tab stops it. That is a deliberate trade for a stateless server with nothing stored; a production version would add a job queue with retention rules.

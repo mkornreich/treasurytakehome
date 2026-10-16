@@ -206,12 +206,12 @@ class Verifier:
                     checks = verify(app, evidences)
                     engines.append(reading.name)
                 except (TimeoutError, VisionUnavailable) as exc:
-                    message = str(exc) or "The AI reader took too long to respond."
-                    notices.append(f"{message} Results are from the local text scanner only.")
+                    message = str(exc) or "The AI reader did not reply in time."
+                    notices.append(f"{message} The results come only from the text scanner on this server.")
                     log.warning("vision reader unavailable: %s", message)
                 except Exception:  # never let the optional reader break a verification
                     log.exception("vision reader failed")
-                    notices.append("The AI reader failed. Results are from the local text scanner only.")
+                    notices.append("The AI reader did not operate correctly. The results come only from the text scanner on this server.")
                 timings["vision"] = perf_counter() - vision_started
 
         status, headline = overall(checks)

@@ -118,23 +118,23 @@ class VisionReader:
             try:
                 response = await self.client.beta.messages.create(**params)
             except anthropic.APITimeoutError as exc:
-                raise VisionUnavailable("The AI reader took too long to respond.") from exc
+                raise VisionUnavailable("The AI reader did not reply in time.") from exc
             except anthropic.APIConnectionError as exc:
-                raise VisionUnavailable("The AI reader could not be reached (the network may block it).") from exc
+                raise VisionUnavailable("The connection to the AI reader failed. The network blocks it, or the service is not available.") from exc
             except anthropic.AuthenticationError as exc:
-                raise VisionUnavailable("The AI reader's API key was rejected.") from exc
+                raise VisionUnavailable("The AI reader did not accept the API key.") from exc
             except anthropic.RateLimitError as exc:
-                raise VisionUnavailable("The AI reader is busy (rate limited).") from exc
+                raise VisionUnavailable("The AI reader is busy. It limits the number of requests.") from exc
             except anthropic.APIStatusError as exc:
-                raise VisionUnavailable(f"The AI reader returned an error ({exc.status_code}).") from exc
+                raise VisionUnavailable(f"The AI reader sent an error ({exc.status_code}).") from exc
 
         if response.stop_reason in ("refusal", "max_tokens"):
-            raise VisionUnavailable("The AI reader did not return a usable reading.")
+            raise VisionUnavailable("The AI reader did not send a result that the tool can use.")
         text = next((b.text for b in response.content if b.type == "text"), "")
         try:
             label = VisionLabel.model_validate(json.loads(text))
         except (json.JSONDecodeError, ValidationError) as exc:
-            raise VisionUnavailable("The AI reader returned an unreadable answer.") from exc
+            raise VisionUnavailable("The tool cannot read the reply of the AI reader.") from exc
         return to_evidence(label, self.name)
 
 
@@ -142,7 +142,7 @@ def to_evidence(label: VisionLabel, name: str) -> Evidence:
     fields = {f: getattr(label, f).strip() for f in FIELDS}
     everything = [*fields.values(), label.government_warning, label.other_text]
     bold = {"yes": True, "no": False}.get(label.warning_heading_bold)
-    note = {True: "The AI reader sees it as bold.", False: "The AI reader sees it as regular weight."}.get(bold, "")
+    note = {True: "The AI reader sees it as bold.", False: "The AI reader sees it as not bold."}.get(bold, "")
     return Evidence(
         source="vision",
         name=name,

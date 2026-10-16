@@ -64,8 +64,8 @@ def _maybe_misread(finding: Finding, wanted: float, seen: list[float], unit: str
     """Downgrade a numeric conflict to review when it could be a digit misread."""
     if finding.status == Status.FAIL and any(_confusable_numbers(v, wanted) for v in seen):
         return replace(finding, status=Status.REVIEW, conflict=True, message=(
-            f"{finding.message} The scanner often confuses these digits, so this may be a misread; "
-            f"please check the {unit} on the label."
+            f"{finding.message} The scanner often reads these digits incorrectly. "
+            f"Examine the {unit} on the label."
         ))
     return finding
 NEAR_MATCH = 90  # similarity (0-100) for "nearly identical - probably a typo or misread"
@@ -116,7 +116,8 @@ def _pick(findings: list[Finding]) -> Finding:
             return _best(confirmed)
         single = _best(fails)
         return replace(single, status=Status.REVIEW, conflict=True, message=(
-            f"{single.message} Only one reading of the label shows this, so it may be a misread; please check."
+            f"{single.message} Only one reading of the label shows this. The scanner can make reading errors. "
+            "Examine the label."
         ))
     reviews = [f for f in findings if f.status == Status.REVIEW]
     if reviews:
@@ -166,12 +167,12 @@ def _strip_accents(text: str) -> str:
 
 def _describe_match(expected: str, found: str) -> str:
     if clean(found) == clean(expected):
-        return "Matches the application."
+        return "The label and the application are the same."
     if clean(found).casefold() == clean(expected).casefold():
-        return f"Matches. Only the capitalization differs (label shows “{found}”)."
+        return f"The text is the same. Only the capital letters are different. The label shows “{found}”."
     if loose(found) != loose(expected):
-        return f"Matches. The label spells out an abbreviation (label shows “{found}”)."
-    return f"Matches, apart from punctuation or spacing (label shows “{found}”)."
+        return f"The text is the same. The label uses the full word for an abbreviation: “{found}”."
+    return f"The text is the same. Only the punctuation or the spaces are different. The label shows “{found}”."
 
 
 def _text_finding(expected: str, found: str, score: float, evidence: Evidence, boxes, structured: bool,
@@ -183,27 +184,29 @@ def _text_finding(expected: str, found: str, score: float, evidence: Evidence, b
     if accented and loose(_strip_accents(found)) == loose(_strip_accents(expected)):
         return Finding(
             Status.REVIEW,
-            f"Same letters, but accent marks differ (label shows “{found}”). Confirm this is acceptable.",
+            f"The letters are the same, but the accent marks are different. The label shows “{found}”. "
+            "Make sure that this difference is permitted.",
             found, evidence, boxes, score,
         )
     if score >= NEAR_MATCH:
         return Finding(
             Status.REVIEW,
-            f"Nearly matches: label shows “{found}”. Check for a typo or a reading error.",
+            f"The text is almost the same. The label shows “{found}”. Examine the label for a typing error or a reading error.",
             found, evidence, boxes, score,
         )
     if structured and found:
         # A reader that returns fields told us what this field says, and it is different.
-        return Finding(Status.FAIL, f"Label shows “{found}”, which does not match the application.", found, evidence, boxes, score)
+        return Finding(Status.FAIL, f"The label shows “{found}”. This is not the same as the application.", found, evidence, boxes, score)
     if score >= WEAK_MATCH:
         return Finding(
             Status.REVIEW,
-            f"Not clearly on the label. Closest text found: “{found}”.",
+            f"The tool did not find this text on the label. The nearest text is “{found}”.",
             found, evidence, boxes, score,
         )
     return Finding(
         Status.REVIEW,
-        "Could not find this on the label. It may be in a decorative font or hard to read; please check by eye.",
+        "The tool did not find this text on the label. The font can be decorative, or the text can be hard to read. "
+        "Examine the label.",
         None, evidence, [], score,
     )
 
@@ -241,7 +244,7 @@ def _address_finding(expected: str, ev: Evidence, tokens, structured: bool) -> F
     found = " … ".join(m.text for m in matches)
     boxes = [] if structured else [b for m in matches for b in _boxes(ev, m.start, m.end)]
     if score == 100:
-        return Finding(Status.PASS, f"Matches: the label shows “{found}”.", found, ev, boxes, score)
+        return Finding(Status.PASS, f"The label shows the same name and address: “{found}”.", found, ev, boxes, score)
     return _text_finding(expected, found, score, ev, boxes, structured=structured)
 
 
@@ -269,7 +272,7 @@ def check_text(field_name: str, label: str, expected: str, evidences: list[Evide
         if address and match and match.score < 100 and (parts := _address_finding(expected, ev, ev.tokens, structured=False)):
             findings.append(parts)
     if not findings:
-        findings.append(Finding(Status.REVIEW, "No text could be read from the label."))
+        findings.append(Finding(Status.REVIEW, "The tool cannot read text on the label."))
     return _result(field_name, label, expected, _pick(findings))
 
 
@@ -289,7 +292,7 @@ def check_alcohol(app: Application, evidences: list[Evidence]) -> CheckResult | 
     if wanted.abv is None:
         return CheckResult(
             field="alcohol_content", label=label, status=Status.REVIEW, expected=app.alcohol_content,
-            message="Could not understand the alcohol content on the application. Expected something like “45% Alc./Vol.”.",
+            message="The tool cannot read the alcohol content on the application. Type it as in this example: “45% Alc./Vol.”.",
         )
 
     findings = []
@@ -304,36 +307,37 @@ def check_alcohol(app: Application, evidences: list[Evidence]) -> CheckResult | 
         matching = sorted((m for m in abvs if abs(m.value - wanted.abv) < 0.05), key=lambda m: not m.percent)
         if matching:
             m = matching[0]
-            message, status, key = f"Matches: label shows {m.value:g}% alcohol by volume.", Status.PASS, ""
+            message, status, key = f"The label shows the same value: {m.value:g}% alcohol by volume.", Status.PASS, ""
             if not m.percent:
-                message, status = (f"The label shows {m.value:g} next to “ALC/VOL” but no % sign. "
-                                   "The alcohol content must be stated as a percentage."), Status.REVIEW
+                message, status = (f"The label shows {m.value:g} next to “ALC/VOL”, but it has no % sign. "
+                                   "The alcohol content must be a percentage."), Status.REVIEW
             elif wanted.proof is not None and proofs:
                 if not any(abs(p.value - wanted.proof) < 0.05 for p in proofs):
                     shown = ", ".join(f"{p.value:g}" for p in proofs)
-                    message, status = f"ABV matches, but the label says {shown} proof; the application says {wanted.proof:g} proof.", Status.FAIL
+                    message, status = (f"The ABV is the same, but the label shows {shown} proof. "
+                                       f"The application shows {wanted.proof:g} proof."), Status.FAIL
                     key = "proof:" + ",".join(f"{p.value:g}" for p in proofs)
             elif proofs and not any(abs(p.value - 2 * m.value) < 0.05 for p in proofs):
-                message, status = f"ABV matches, but the proof on the label ({proofs[0].value:g}) is not twice the ABV.", Status.REVIEW
+                message, status = f"The ABV is the same, but the proof on the label ({proofs[0].value:g}) is not two times the ABV.", Status.REVIEW
             findings.append(Finding(status, message, m.text, ev, boxes(m) + sum((boxes(p) for p in proofs), []), 100,
                                     key=key))
         elif abvs:
             shown = ", ".join(f"{m.value:g}%" for m in abvs)
             findings.append(_maybe_misread(Finding(
                 Status.FAIL,
-                f"Label shows {shown}; the application says {wanted.abv:g}%.",
+                f"The label shows {shown}. The application shows {wanted.abv:g}%.",
                 abvs[0].text, ev, sum((boxes(m) for m in abvs), []), 50,
                 key="abv:" + ",".join(sorted(f"{m.value:g}" for m in abvs)),
             ), wanted.abv, [m.value for m in abvs], "alcohol content"))
         elif proofs:
             p = proofs[0]
             if wanted.proof is not None and abs(p.value - wanted.proof) < 0.05 or abs(p.value / 2 - wanted.abv) < 0.05:
-                findings.append(Finding(Status.PASS, f"Matches: label shows {p.value:g} proof ({p.value / 2:g}% ABV).", p.text, ev, boxes(p), 90))
+                findings.append(Finding(Status.PASS, f"The label shows the same value: {p.value:g} proof ({p.value / 2:g}% ABV).", p.text, ev, boxes(p), 90))
             else:
-                findings.append(Finding(Status.FAIL, f"Label shows {p.value:g} proof; the application says {wanted.describe()}.",
+                findings.append(Finding(Status.FAIL, f"The label shows {p.value:g} proof. The application shows {wanted.describe()}.",
                                         p.text, ev, boxes(p), 50, key=f"proof:{p.value:g}"))
     if not findings:
-        findings.append(Finding(Status.REVIEW, "Could not find an alcohol content statement on the label."))
+        findings.append(Finding(Status.REVIEW, "The tool did not find an alcohol content statement on the label."))
     return _result("alcohol_content", label, app.alcohol_content, _pick(findings))
 
 
@@ -344,12 +348,12 @@ def _alcohol_presence(app: Application, evidences: list[Evidence]) -> CheckResul
             m = mentions[0]
             boxes = _span_boxes(ev, m, _alcohol_text(ev))
             return _result("alcohol_content", "Alcohol content", None, Finding(
-                Status.PASS, f"Label states {m.value:g}% alcohol by volume (not on the application, so not compared).",
+                Status.PASS, f"The label shows {m.value:g}% alcohol by volume. The application does not give a value, so the tool did not compare it.",
                 m.text, ev, boxes,
             ))
     if app.beverage_type == BeverageType.SPIRITS:
         return _result("alcohol_content", "Alcohol content", None, Finding(
-            Status.REVIEW, "No alcohol content found on the label. It is required for distilled spirits.",
+            Status.REVIEW, "The tool did not find the alcohol content on the label. Distilled spirits must show it.",
         ))
     return None  # optional for most beer and wine
 
@@ -363,7 +367,7 @@ def check_net_contents(app: Application, evidences: list[Evidence]) -> CheckResu
     if app.net_contents and wanted is None:
         return CheckResult(
             field="net_contents", label=label, status=Status.REVIEW, expected=app.net_contents,
-            message="Could not understand the net contents on the application. Expected something like “750 mL”.",
+            message="The tool cannot read the net contents on the application. Type it as in this example: “750 mL”.",
         )
 
     findings = []
@@ -377,23 +381,24 @@ def check_net_contents(app: Application, evidences: list[Evidence]) -> CheckResu
             return _span_boxes(ev, m, text)
         if wanted is None:
             m = mentions[0]
-            findings.append(Finding(Status.PASS, f"Label states {m.text} (not on the application, so not compared).", m.text, ev, boxes(m), 100))
+            findings.append(Finding(Status.PASS, f"The label shows {m.text}. The application does not give a value, so the tool did not compare it.",
+                                    m.text, ev, boxes(m), 100))
             continue
         matching = [m for m in mentions if same_volume(m.value, wanted)]
         if matching:
             m = matching[0]
             same_units = abs(m.value - wanted) < 0.01
-            note = "" if same_units else f" ({m.text} is the same as {format_ml(wanted)})"
-            findings.append(Finding(Status.PASS, f"Matches: label shows {m.text}{note}.", m.text, ev, boxes(m), 100))
+            note = "" if same_units else f" {m.text} is the same as {format_ml(wanted)}."
+            findings.append(Finding(Status.PASS, f"The label shows the same value: {m.text}.{note}", m.text, ev, boxes(m), 100))
         else:
             shown = ", ".join(m.text for m in mentions)
             findings.append(_maybe_misread(Finding(
-                Status.FAIL, f"Label shows {shown}; the application says {app.net_contents}.",
+                Status.FAIL, f"The label shows {shown}. The application shows {app.net_contents}.",
                 mentions[0].text, ev, sum((boxes(m) for m in mentions), []), 50,
                 key="ml:" + ",".join(sorted(f"{m.value:.0f}" for m in mentions)),
             ), wanted, [round(m.value, 2) for m in mentions], "net contents"))
     if not findings:
-        findings.append(Finding(Status.REVIEW, "Could not find the net contents (for example “750 mL”) on the label."))
+        findings.append(Finding(Status.REVIEW, "The tool did not find the net contents on the label, for example “750 mL”."))
     return _result("net_contents", label, app.net_contents or None, _pick(findings))
 
 
@@ -415,9 +420,15 @@ def _absent_warning(readings: list[WarningReading]) -> Finding:
     vision = any(ev.source == "vision" for ev in evidences)
     # Missing only if every picture was read clearly, twice (or by the AI reader).
     if not partial and (vision or (per_image and min(per_image.values()) >= 2)):
-        return Finding(Status.FAIL, "No government warning statement was found on the label.", evidence=evidences[0])
-    return Finding(Status.REVIEW, "Could not read the government warning. It may be missing, or too small or blurry to read.",
+        return Finding(Status.FAIL, "The tool did not find the government warning on the label.", evidence=evidences[0])
+    return Finding(Status.REVIEW, "The tool cannot read the government warning. The warning is not on the label, "
+                   "or it is too small or not clear.",
                    evidence=evidences[0])
+
+
+def _sentences(items: list[str]) -> str:
+    """Differences as short sentences: "Missing: “(1)”. “impairs” read as “may impair”."."""
+    return " ".join(f"{item[0].upper()}{item[1:]}" + ("" if item.endswith((".", ".”")) else ".") for item in items)
 
 
 def _source_wording(readings: list[WarningReading]) -> tuple[Finding, WarningReading]:
@@ -428,7 +439,7 @@ def _source_wording(readings: list[WarningReading]) -> tuple[Finding, WarningRea
     exact = [r for r in located if r.exact]
     if exact:
         r = max(exact, key=lambda r: r.score)
-        return Finding(Status.PASS, "Word-for-word match with the required statement.", r.text, r.evidence, r.boxes, r.score), r
+        return Finding(Status.PASS, "The warning is word-for-word the same as the required statement.", r.text, r.evidence, r.boxes, r.score), r
     best = _best_reading(located)
     clean_reads = [r for r in located if not r.major and r.score >= 85]
     if best.major and clean_reads:
@@ -437,18 +448,18 @@ def _source_wording(readings: list[WarningReading]) -> tuple[Finding, WarningRea
         # column spliced in, say) than the label's.
         best = max(clean_reads, key=lambda r: r.score)
     if best.major:
-        problems = "; ".join(best.major[:3])
-        message = f"Wording differs from the required statement: {problems}."
+        message = f"The text is different from the required statement. {_sentences(best.major[:3])}"
         confirmed = best.evidence.source != "ocr" or any(
             other.evidence is not best.evidence and other.marks & best.marks for other in located
         )
         if confirmed:
             return Finding(Status.FAIL, message, best.text, best.evidence, best.boxes, best.score), best
-        return Finding(Status.REVIEW, f"{message} Only one reading shows this, so it may be a misread; please compare.",
+        return Finding(Status.REVIEW, f"{message} Only one reading shows this. The scanner can make reading errors. "
+                       "Compare the text on the label.",
                        best.text, best.evidence, best.boxes, best.score, conflict=True), best
-    problems = "; ".join(best.minor[:3])
-    return Finding(Status.REVIEW, f"Very close to the required wording, but please compare: {problems}. "
-                   "This may be a reading error.", best.text, best.evidence, best.boxes, best.score), best
+    return Finding(Status.REVIEW, f"The text is almost the same as the required statement. Compare these items. "
+                   f"{_sentences(best.minor[:3])} The difference can be a reading error.",
+                   best.text, best.evidence, best.boxes, best.score), best
 
 
 def _source_capitals(readings: list[WarningReading]) -> Finding:
@@ -459,20 +470,20 @@ def _source_capitals(readings: list[WarningReading]) -> Finding:
         r = max(capitals, key=lambda r: (r.header_colon, r.score))
         if r.header_colon:
             return Finding(Status.PASS, "“GOVERNMENT WARNING:” is in capital letters.", r.header_found, r.evidence, r.header_boxes, r.score)
-        return Finding(Status.REVIEW, "In capitals, but the colon after “GOVERNMENT WARNING” may be missing.",
+        return Finding(Status.REVIEW, "The heading is in capital letters, but the tool did not find the colon after “GOVERNMENT WARNING”.",
                        r.header_found, r.evidence, r.header_boxes, r.score)
     if with_header:
         r = max(with_header, key=lambda r: r.score)
-        message = f"Label shows “{r.header_found}”. It must be in capital letters: “GOVERNMENT WARNING:”."
+        message = f"The label shows “{r.header_found}”. The heading must be in capital letters: “GOVERNMENT WARNING:”."
         seen_by = {id(x.evidence) for x in with_header}
         if r.evidence.source != "ocr" or len(seen_by) >= 2:
             return Finding(Status.FAIL, message, r.header_found, r.evidence, r.header_boxes, r.score)
-        return Finding(Status.REVIEW, f"{message} Only one reading shows this; please check.",
+        return Finding(Status.REVIEW, f"{message} Only one reading shows this. Examine the label.",
                        r.header_found, r.evidence, r.header_boxes, r.score, conflict=True)
     r = max(located, key=lambda r: r.score)
     if r.evidence.source != "ocr":
-        return Finding(Status.FAIL, "The statement must begin with “GOVERNMENT WARNING:”.", None, r.evidence, [], r.score)
-    return Finding(Status.REVIEW, "Could not find the heading “GOVERNMENT WARNING:”; please check that it is there.",
+        return Finding(Status.FAIL, "The statement must start with “GOVERNMENT WARNING:”.", None, r.evidence, [], r.score)
+    return Finding(Status.REVIEW, "The tool did not find the heading “GOVERNMENT WARNING:”. Make sure that the label has this heading.",
                    None, r.evidence, r.boxes[:2], r.score)
 
 
@@ -495,8 +506,8 @@ def _combine_readers(per_reader: dict[str, Finding]) -> Finding:
             return Finding(
                 Status.REVIEW,
                 f"The {READER_NAMES.get(failing.evidence.source)} and the {READER_NAMES.get(passing.evidence.source)} "
-                f"disagree. The {READER_NAMES.get(failing.evidence.source)} reports: {failing.message} "
-                "Please compare the label by eye.",
+                f"do not agree. The {READER_NAMES.get(failing.evidence.source)} found this: {failing.message} "
+                "Compare the text on the label.",
                 failing.found, failing.evidence, failing.boxes or passing.boxes, failing.score,
             )
         return passing
@@ -510,14 +521,14 @@ def _best_reading(readings: list[WarningReading]) -> WarningReading:
 def check_warning(evidences: list[Evidence]) -> list[CheckResult]:
     if not evidences:
         return [CheckResult(field="warning_text", label="Government warning", status=Status.REVIEW,
-                            message="No text could be read from the label.")]
+                            message="The tool cannot read text on the label.")]
     by_source: dict[str, list[WarningReading]] = {}
     for ev in evidences:
         by_source.setdefault(ev.source, []).append(read_warning(ev))
 
     verdicts = {source: _source_wording(readings) for source, readings in by_source.items()}
     wording = _combine_readers({s: v[0] for s, v in verdicts.items()})
-    results = [_result("warning_text", "Government warning: wording", None, wording)]
+    results = [_result("warning_text", "Government warning: text", None, wording)]
     results[0].diff = next((r.diff for _, r in verdicts.values() if r.evidence is wording.evidence and r.located), None)
     located = {s: [r for r in readings if r.located] for s, readings in by_source.items()}
     located = {s: rs for s, rs in located.items() if rs}
@@ -532,7 +543,7 @@ def check_warning(evidences: list[Evidence]) -> list[CheckResult]:
 
 
 def _bold(located: dict[str, list[WarningReading]]) -> CheckResult:
-    label = "Government warning: bold heading"
+    label = "Government warning: bold type"
     votes: dict[str, tuple[bool, str]] = {}
     boxes: list[Box] = []
     for source, readings in located.items():
@@ -545,16 +556,17 @@ def _bold(located: dict[str, list[WarningReading]]) -> CheckResult:
         boxes = boxes or merge_boxes(_best_reading(readings).header_boxes)
     if not votes:
         return CheckResult(field="warning_bold", label=label, status=Status.REVIEW, boxes=boxes,
-                           message="Could not tell whether “GOVERNMENT WARNING:” is bold; please check by eye.")
+                           message="The tool did not measure the type weight of “GOVERNMENT WARNING:”. "
+                                   "Examine the label to make sure that the heading is in bold type.")
     says_bold = [v for v, _ in votes.values()]
     notes = " ".join(note for _, note in votes.values() if note)
     if all(says_bold):
         return CheckResult(field="warning_bold", label=label, status=Status.PASS, boxes=boxes,
-                           message=f"“GOVERNMENT WARNING:” appears to be in bold type. {notes}".strip())
+                           message=f"“GOVERNMENT WARNING:” is in bold type. {notes}".strip())
     status = Status.FAIL if len(votes) > 1 and not any(says_bold) else Status.REVIEW
     return CheckResult(
         field="warning_bold", label=label, status=status, boxes=boxes,
-        message=f"“GOVERNMENT WARNING:” does not appear to be bold, which is required. {notes} Please check by eye.".strip(),
+        message=f"The tool measured “GOVERNMENT WARNING:” as not bold. Bold type is required. {notes} Examine the label.".strip(),
     )
 
 
@@ -579,9 +591,9 @@ def check_country(expected: str, evidences: list[Evidence]) -> CheckResult:
             statement = f"{m.group(1)} {stated}"
             match = find_phrase(expected, tokens_from_text(stated))
             if match and match.score >= 90:
-                findings.append(Finding(Status.PASS, f"Matches: the label says “{statement}”.", statement, ev, [], 100))
+                findings.append(Finding(Status.PASS, f"The label shows the same country: “{statement}”.", statement, ev, [], 100))
             else:
-                findings.append(Finding(Status.FAIL, f"The label says “{statement}”; the application says {expected}.",
+                findings.append(Finding(Status.FAIL, f"The label shows “{statement}”. The application shows {expected}.",
                                         statement, ev, [], 80, key=f"origin:{loose(stated)}"))
     if not findings:
         return result
@@ -597,12 +609,12 @@ def verify(app: Application, evidences: list[Evidence]) -> list[CheckResult]:
     if app.brand_name:
         checks.append(check_text("brand_name", "Brand name", app.brand_name, evidences))
     if app.class_type:
-        checks.append(check_text("class_type", "Class / type", app.class_type, evidences))
+        checks.append(check_text("class_type", "Class or type", app.class_type, evidences))
     if (alcohol := check_alcohol(app, evidences)) is not None:
         checks.append(alcohol)
     checks.append(check_net_contents(app, evidences))
     if app.bottler:
-        checks.append(check_text("bottler", "Bottler / producer name and address", app.bottler, evidences,
+        checks.append(check_text("bottler", "Name and address of the bottler", app.bottler, evidences,
                                  address=True, contained=True))
     if app.country_of_origin:
         checks.append(check_country(app.country_of_origin, evidences))
@@ -615,8 +627,8 @@ def overall(checks: list[CheckResult]) -> tuple[Status, str]:
     review = sum(c.status == Status.REVIEW for c in checks)
     plural = lambda n, word: f"{n} {word}{'' if n == 1 else 's'}"
     if failed:
-        tail = f", and {plural(review, 'item')} to review" if review else ""
+        tail = f", {plural(review, 'item')} to examine" if review else ""
         return Status.FAIL, f"{plural(failed, 'problem')} found{tail}"
     if review:
-        return Status.REVIEW, f"{plural(review, 'item')} need{'s' if review == 1 else ''} a closer look"
-    return Status.PASS, f"All {len(checks)} checks passed"
+        return Status.REVIEW, f"{plural(review, 'item')} to examine"
+    return Status.PASS, f"All {len(checks)} checks are OK"

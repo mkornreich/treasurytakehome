@@ -28,7 +28,7 @@ def decode(data: bytes) -> np.ndarray:
             img = ImageOps.exif_transpose(img)
             return np.asarray(img.convert("RGB"))
     except (UnidentifiedImageError, Image.DecompressionBombError, OSError, ValueError) as exc:
-        raise ImageError("This file could not be opened as a picture.") from exc
+        raise ImageError("The tool cannot open this file as a picture.") from exc
 
 
 def to_gray(rgb: np.ndarray) -> np.ndarray:
@@ -143,17 +143,17 @@ def quality_notices(gray: np.ndarray) -> list[str]:
     notices = []
     h, w = gray.shape[:2]
     if max(h, w) < 700:
-        notices.append("The picture is small (low resolution), so fine print may not be readable.")
+        notices.append("The picture has a low resolution. The tool cannot always read small text in it.")
     sample = gray
     if max(h, w) > 1200:
         scale = 1200 / max(h, w)
         sample = cv2.resize(gray, (round(w * scale), round(h * scale)), interpolation=cv2.INTER_AREA)
     if cv2.Laplacian(sample, cv2.CV_64F).var() < 40:
-        notices.append("The picture looks blurry. A sharper photo will give more reliable results.")
+        notices.append("The picture is not sharp. A sharp picture gives better results.")
     mean = float(sample.mean())
     if mean < 50:
         notices.append("The picture is very dark.")
     glare = float((sample >= 250).mean())
     if glare > 0.12 and mean < 200:
-        notices.append("Part of the label looks washed out by glare or reflections.")
+        notices.append("Glare or reflections make a part of the label hard to read.")
     return notices

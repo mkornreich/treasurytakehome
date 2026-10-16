@@ -78,7 +78,7 @@ def _header_weight(view: View, words: list[WordImage]) -> tuple[bool | None, str
             # Judge print size on the upload itself: an enlarged crop only looks big.
             enlarged = float(np.sqrt(abs(np.linalg.det(view.matrix[:2, :2]))))
             if words[i].height / max(enlarged, 1e-6) < MIN_HEADING_PX:
-                return None, "The heading is printed too small in this picture to judge whether it is bold."
+                return None, "The heading in this picture is too small to measure its type weight."
             return header_boldness(view.image, words[i : i + 2], words[i + 2 : i + 40])
     return None, ""
 

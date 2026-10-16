@@ -55,16 +55,16 @@ def header_boldness(
     """Compare stroke weight of the heading words with the warning text after them."""
     heights = [h.height for h in header if h.height >= MIN_LETTER_PX]
     if not heights:
-        return None, "The print is too small to judge whether the heading is bold."
+        return None, "The text is too small to measure the type weight of the heading."
     scale = min(6.0, REFERENCE_HEIGHT / float(np.median(heights)))
     header_widths = [w for w in (stroke_width(gray, h, scale) for h in header) if w]
     body_words = [b for b in body if sum(c.isalpha() for c in b.text) >= 3]
     body_widths = [w for w in (stroke_width(gray, b, scale) for b in body_words) if w]
     if not header_widths or len(body_widths) < 3:
-        return None, "The print is too small to judge whether the heading is bold."
+        return None, "The text is too small to measure the type weight of the heading."
     ratio = float(np.median(header_widths) / np.median(body_widths))
     if ratio >= BOLD_RATIO:
-        return True, f"Heading strokes are {ratio:.2f}× as thick as the warning text."
+        return True, f"The heading letters are {ratio:.2f} times as thick as the warning text."
     if ratio <= REGULAR_RATIO:
-        return False, f"Heading strokes are about as thick as the warning text ({ratio:.2f}×)."
-    return None, f"Heading is only slightly heavier than the warning text ({ratio:.2f}×)."
+        return False, f"The heading letters and the warning text are almost the same thickness ({ratio:.2f} times)."
+    return None, f"The heading letters are only a little thicker than the warning text ({ratio:.2f} times)."

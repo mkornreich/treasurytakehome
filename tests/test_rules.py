@@ -52,7 +52,7 @@ def test_brand_capitalization_difference_is_a_match_with_a_note():
     app = APP.model_copy(update={"brand_name": "Old Tom Distillery"})
     result = check_text("brand_name", "Brand name", app.brand_name, [ocr(LABEL.replace("Distilled and Bottled by Old Tom Distillery, ", ""))])
     assert result.status == Status.PASS
-    assert "capitalization" in result.message
+    assert "capital letters" in result.message
 
 
 def test_brand_prefers_prominent_exact_text_over_small_print():
@@ -123,7 +123,7 @@ def test_conflict_seen_by_one_reading_only_is_review():
     blurry = ocr(LABEL.replace("750 mL", ""), name="ocr:enhanced")
     net = next(c for c in verify(APP, [misread, blurry]) if c.field == "net_contents")
     assert net.status == Status.REVIEW
-    assert "misread" in net.message
+    assert "Examine the" in net.message
 
 
 def test_blank_application_fields_are_skipped_but_label_values_reported():
@@ -223,7 +223,7 @@ def test_readers_disagreeing_on_warning_need_review():
     bad_label = LABEL.replace("GOVERNMENT WARNING", "Government Warning")
     checks = {c.field: c for c in check_warning([ocr(bad_label), vision("", warning=CANONICAL_WARNING)])}
     assert checks["warning_caps"].status == Status.REVIEW
-    assert "disagree" in checks["warning_caps"].message
+    assert "do not agree" in checks["warning_caps"].message
 
 
 def test_vision_reading_wins_when_ocr_could_not_read_warning():
@@ -255,7 +255,7 @@ def test_confusable_digits_are_review_even_when_read_twice():
     label = LABEL.replace("45% Alc./Vol. (90 Proof)", "ALC. 18% BY VOL")
     abv = next(c for c in verify(app, ocr_twice(label)) if c.field == "alcohol_content")
     assert abv.status == Status.REVIEW
-    assert "confuses these digits" in abv.message
+    assert "reads these digits incorrectly" in abv.message
 
 
 def test_address_parts_may_be_separated_on_the_label():

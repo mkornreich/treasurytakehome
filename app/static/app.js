@@ -3,16 +3,17 @@
 const FIELDS = ["brand_name", "class_type", "alcohol_content", "net_contents", "bottler", "country_of_origin"];
 const STATUS = {
   pass: { icon: "✓", word: "OK" },
-  review: { icon: "!", word: "Check" },
+  review: { icon: "!", word: "Examine" },
   fail: { icon: "✕", word: "Problem" },
-  queued: { icon: "…", word: "Waiting" },
-  running: { icon: "…", word: "Checking" },
-  error: { icon: "?", word: "Not checked" },
+  queued: { icon: "…", word: "Not started" },
+  running: { icon: "…", word: "In progress" },
+  error: { icon: "?", word: "No result" },
 };
 const MAX_SIDE = 3000; // large phone photos are shrunk before upload: faster, and plenty for OCR
 const RESIZE_OVER_BYTES = 2.5 * 1024 * 1024;
 const BATCH_CONCURRENCY = 4;
 const IMAGE_EXT = /\.(jpe?g|png|webp|gif|bmp|tiff?)$/i;
+const NO_CONNECTION = "The connection to the server failed.";
 
 const $ = (sel, root = document) => root.querySelector(sel);
 const $$ = (sel, root = document) => [...root.querySelectorAll(sel)];
@@ -104,10 +105,10 @@ async function postVerify(files, application) {
   try {
     response = await fetch("/api/verify", { method: "POST", body: form });
   } catch {
-    throw new Error("Could not reach the server. Check the connection and try again.");
+    throw new Error(`${NO_CONNECTION} Make sure that your network connection operates. Then try again.`);
   }
   if (!response.ok) {
-    let detail = `The server could not check this label (error ${response.status}).`;
+    let detail = `The server did not complete the check of this label (error ${response.status}). Try again.`;
     try {
       const body = await response.json();
       if (typeof body.detail === "string") detail = body.detail;
@@ -129,12 +130,12 @@ function renderDiff(diff) {
     if (d.op === "equal") parts.push(d.text, " ");
     else if (d.op === "missing") parts.push(el("del", { title: "Required, but not on the label" }, d.text), " ");
     else if (d.op === "extra") parts.push(el("ins", { title: "On the label, but not in the required text" }, d.text), " ");
-    else parts.push(el("del", { title: "Required wording" }, d.expected), " ", el("ins", { title: "What the label says" }, d.found), " ");
+    else parts.push(el("del", { title: "Required text" }, d.expected), " ", el("ins", { title: "What the label says" }, d.found), " ");
   }
   return el("details", { class: "diff", open: true },
-    el("summary", {}, "Compare with the required wording"),
+    el("summary", {}, "Compare with the required text"),
     el("p", { class: "diff-text" }, parts),
-    el("p", { class: "diff-key" }, "Struck-out red text is required but missing; yellow text is on the label but not in the required statement."),
+    el("p", { class: "diff-key" }, "Red text with a line through it is required, but it is not on the label. Yellow text is on the label, but it is not in the required statement."),
   );
 }
 
@@ -143,7 +144,7 @@ function renderResult(container, result, files) {
   const urls = files.map((f) => URL.createObjectURL(f));
   const views = urls.map((url, i) =>
     el("div", { class: "img-wrap", "data-image": i },
-      el("img", { src: url, alt: `Label picture ${i + 1}`, onerror: (e) => { e.target.alt = "Preview not available for this file type"; } }),
+      el("img", { src: url, alt: `Label picture ${i + 1}`, onerror: (e) => { e.target.alt = "The browser cannot show this type of file."; } }),
       files.length > 1 ? el("span", { class: "img-tag" }, `Picture ${i + 1}`) : null,
     ));
   const caption = el("figcaption", {}, "Click a result to see where it is on the label.");
@@ -162,8 +163,8 @@ function renderResult(container, result, files) {
       }));
     }
     caption.textContent = check.boxes.length
-      ? `Showing: ${check.label}.`
-      : `${check.label}: no location to show (not found on the picture, or read by the AI reader).`;
+      ? `Highlighted: ${check.label}.`
+      : `${check.label}: the tool cannot show a location. The text is not on the picture, or the AI reader read it.`;
   };
 
   let selected = null;
@@ -196,7 +197,7 @@ function renderResult(container, result, files) {
   const heading = el("h2", { tabindex: -1 }, result.headline);
   const flagged = checks.map((c, i) => [c, i]).filter(([c]) => c.status !== "pass");
   const jumps = flagged.length
-    ? el("p", { class: "jumps" }, "Look at: ", flagged.map(([c, i]) =>
+    ? el("p", { class: "jumps" }, "Examine: ", flagged.map(([c, i]) =>
         el("button", { type: "button", class: `jump ${c.status}`, onclick: () => {
           if (selected !== i) items[i].click();
           items[i].scrollIntoView({ block: "center" });
@@ -206,7 +207,7 @@ function renderResult(container, result, files) {
   container.replaceChildren(...[
     el("div", { class: `verdict ${result.overall}` },
       el("div", { class: "verdict-icon", "aria-hidden": "true" }, STATUS[result.overall].icon),
-      el("div", {}, heading, el("p", {}, `Checked in ${seconds} seconds by the ${engineText(result)}. The agent makes the final decision.`), jumps),
+      el("div", {}, heading, el("p", {}, `The ${engineText(result)} examined the label in ${seconds} seconds. The agent makes the final decision.`), jumps),
     ),
     result.notices.length ? el("ul", { class: "notices" }, result.notices.map((n) => el("li", {}, n))) : null,
     el("div", { class: "result-grid" },
@@ -250,14 +251,14 @@ function renderThumbs() {
     return node;
   }));
   if (single.files.length && single.files.length < 6) {
-    list.append(el("li", {}, el("button", { type: "button", class: "thumb-add", "data-pick": "single-files" }, "+ Add another picture (e.g. back label)")));
+    list.append(el("li", {}, el("button", { type: "button", class: "thumb-add", "data-pick": "single-files" }, "+ Add a picture of the back label")));
   }
   $("#single-drop").classList.toggle("has-files", single.files.length > 0);
 }
 
 function addSingleFiles(files) {
   const images = files.filter(isImage);
-  if (files.length && !images.length) return showSingleError("That file is not a picture. Please choose a JPG or PNG photo of the label.");
+  if (files.length && !images.length) return showSingleError("That file is not a picture. Choose a JPG or PNG picture of the label.");
   single.files.push(...images);
   single.files = single.files.slice(0, 6);
   hideSingleError();
@@ -273,7 +274,7 @@ function hideSingleError() { $("#single-error").hidden = true; }
 
 function setBusy(button, busy, label) {
   button.disabled = busy;
-  button.replaceChildren(...(busy ? [el("span", { class: "spinner", "aria-hidden": "true" }), "Checking…"] : [label]));
+  button.replaceChildren(...(busy ? [el("span", { class: "spinner", "aria-hidden": "true" }), "Wait…"] : [label]));
 }
 
 async function loadSamples() {
@@ -299,9 +300,15 @@ function setupSingle(samples) {
   setupDropzone($("#single-drop"), addSingleFiles);
 
   const select = $("#sample-select");
-  const title = (name) => name.replace(/^\d+_/, "").replace(/\.\w+$/, "").replaceAll("_", " ");
-  for (const s of samples) select.append(el("option", { value: s.id }, `${title(s.files[0].name)} — ${s.note}`));
+  const display = $("#sample-display");
+  const showChoice = () => {
+    const option = select.selectedOptions[0];
+    display.textContent = option ? option.textContent : "";
+    display.classList.toggle("placeholder", !select.value);
+  };
+  for (const s of samples) select.append(el("option", { value: s.id }, s.note));
   select.addEventListener("change", async () => {
+    showChoice();
     const sample = samples.find((s) => s.id === select.value);
     if (!sample) return;
     single.files = await Promise.all(sample.files.map((f) => fetchFile(f.url, f.name)));
@@ -315,7 +322,7 @@ function setupSingle(samples) {
     e.preventDefault();
     hideSingleError();
     if (!single.files.length) {
-      showSingleError("Please add a picture of the label first.");
+      showSingleError("Add a picture of the label first.");
       $('[data-pick="single-files"]').focus();
       return;
     }
@@ -341,6 +348,7 @@ function setupSingle(samples) {
     single.files = [];
     renderThumbs();
     select.value = "";
+    showChoice();
     resultBox.hidden = true;
     hideSingleError();
     window.scrollTo({ top: 0 });
@@ -385,7 +393,7 @@ function parseCSV(text) {
   const [header, ...body] = rows.filter((r) => r.some((v) => v.trim()));
   if (!header) throw new Error("The spreadsheet is empty.");
   const keys = header.map((h) => HEADER_LOOKUP[h.trim().toLowerCase().replace(/[^a-z0-9]+/g, "_").replace(/^_|_$/g, "")] || null);
-  if (!keys.includes("label_file")) throw new Error("The spreadsheet needs a “label_file” column naming each label picture.");
+  if (!keys.includes("label_file")) throw new Error("The spreadsheet must have a “label_file” column with the file name of each picture.");
   return {
     delimiter,
     rows: body.map((r) => Object.fromEntries(keys.map((k, i) => [k, (r[i] || "").trim()]).filter(([k]) => k))),
@@ -441,7 +449,7 @@ function planBatch() {
       items.push({
         name: names.join(" + ") || `Row ${n + 2}`, id: row.application_id || "", files, application, notFound,
         status: files.length ? "queued" : "error",
-        error: files.length ? "" : `Picture not added: ${notFound.join(", ") || "no label_file given"}`,
+        error: files.length ? "" : (notFound.length ? `These pictures were not added: ${notFound.join(", ")}.` : "The label_file box is empty."),
       });
     });
   }
@@ -454,24 +462,24 @@ function planBatch() {
   const plan = $("#batch-plan");
   const runnable = items.filter((i) => i.status === "queued").length;
   plan.hidden = items.length === 0;
-  const parts = [`${plural(runnable, "label")} ready to check.`];
-  if (batch.csv && extras.length) parts.push(`${plural(extras.length, "picture")} not in the spreadsheet will be checked for the warning, alcohol and net contents only.`);
-  if (!batch.csv && runnable) parts.push("Without a spreadsheet, only the government warning, alcohol content and net contents are checked.");
+  const parts = [`${plural(runnable, "label")} ${runnable === 1 ? "is" : "are"} ready.`];
+  if (batch.csv && extras.length) parts.push(`${plural(extras.length, "picture")} ${extras.length === 1 ? "is" : "are"} not in the spreadsheet. For these, the tool examines only the warning, the alcohol content, and the net contents.`);
+  if (!batch.csv && runnable) parts.push("If there is no spreadsheet, the tool examines only the government warning, the alcohol content, and the net contents.");
   $("#batch-summary").textContent = parts.join(" ");
   const details = $("#batch-unmatched");
   details.hidden = missing.length === 0;
-  $("summary", details).textContent = `${plural(missing.length, "row")} name pictures that were not added`;
+  $("summary", details).textContent = `${plural(missing.length, "row")} ${missing.length === 1 ? "has" : "have"} the names of pictures that you did not add`;
   $("ul", details).replaceChildren(...missing.map((m) => el("li", {}, m)));
 
   const start = $("#batch-start");
   start.disabled = runnable === 0 || batch.running;
-  start.textContent = runnable ? `Start checking ${plural(runnable, "label")}` : "Start checking";
+  start.textContent = runnable ? `Check ${plural(runnable, "label")}` : "Check the labels";
 }
 
 function itemSummary(item) {
   if (item.status === "error") return item.error;
-  if (item.status === "queued") return batch.running ? "Waiting…" : (item.noRow ? "No application row: warning, alcohol and net contents only" : "Ready");
-  if (item.status === "running") return "Checking…";
+  if (item.status === "queued") return batch.running ? "Not started." : (item.noRow ? "No row in the spreadsheet. The tool examines only the warning, alcohol content, and net contents." : "Ready.");
+  if (item.status === "running") return "In progress.";
   const problems = item.result.checks.filter((c) => c.status !== "pass").map((c) => c.label);
   return problems.length ? `${item.result.headline}: ${problems.join(", ")}` : item.result.headline;
 }
@@ -490,7 +498,7 @@ function renderBatchItem(item) {
     row.setAttribute("aria-expanded", open);
     $(".batch-detail", node)?.remove();
     if (!open) return;
-    const detail = el("div", { class: "batch-detail" }, el("p", {}, "Loading…"));
+    const detail = el("div", { class: "batch-detail" }, el("p", {}, "Wait…"));
     node.append(detail);
     renderResult(detail, item.result, await Promise.all(item.files.map(prepareImage)));
   });
@@ -512,15 +520,15 @@ function updateBatchCounts() {
   $("#batch-bar").style.width = `${pct}%`;
   $(".progress").setAttribute("aria-valuenow", pct);
   const checked = batch.items.filter((i) => i.result).length;
-  let text = `Checked ${checked} of ${total}`;
-  const tally = [`${count("fail")} with problems`, `${count("review")} to review`, `${count("pass")} all good`];
+  let text = `${checked} of ${total} labels examined`;
+  const tally = [`${count("fail")} with problems`, `${count("review")} to examine`, `${count("pass")} OK`];
   text += ` · ${tally.join(" · ")}`;
   if (batch.running && checked) {
     const perLabel = (performance.now() - batch.started) / checked;
     const left = Math.round((perLabel * (total - done.length)) / 1000);
-    if (left > 0) text += ` · about ${left < 60 ? plural(left, "second") : plural(Math.ceil(left / 60), "minute")} left`;
+    if (left > 0) text += ` · approximately ${left < 60 ? plural(left, "second") : plural(Math.ceil(left / 60), "minute")} to go`;
   } else if (!batch.running) {
-    text = (batch.stop ? "Stopped. " : "Finished. ") + text;
+    text = (batch.stop ? "The check stopped. " : "The check is completed. ") + text;
   }
   $("#batch-progress-text").textContent = text;
   $("#batch-export").disabled = checked === 0;
@@ -534,12 +542,12 @@ async function runItem(item) {
       const prepared = await Promise.all(item.files.map(prepareImage));
       item.result = await postVerify(prepared, item.application);
       item.status = item.result.overall;
-      if (item.notFound.length) item.result.notices.unshift(`Picture not added: ${item.notFound.join(", ")}`);
+      if (item.notFound.length) item.result.notices.unshift(`These pictures were not added: ${item.notFound.join(", ")}.`);
       break;
     } catch (err) {
       item.status = "error";
       item.error = err.message;
-      if (err.message.startsWith("Could not reach")) await new Promise((r) => setTimeout(r, 1000));
+      if (err.message.startsWith(NO_CONNECTION)) await new Promise((r) => setTimeout(r, 1000));
       else break;
     }
   }
@@ -567,19 +575,19 @@ async function startBatch() {
   await Promise.all(Array.from({ length: BATCH_CONCURRENCY }, worker));
   batch.running = false;
   $("#batch-stop").hidden = true;
-  batch.items.filter((i) => i.status === "queued").forEach((i) => { i.status = "error"; i.error = "Not checked (stopped)"; renderBatchItem(i); });
+  batch.items.filter((i) => i.status === "queued").forEach((i) => { i.status = "error"; i.error = "No result. You stopped the check."; renderBatchItem(i); });
   updateBatchCounts();
 }
 
 function exportBatch() {
-  const header = ["application_id", "label_file", "brand_name", "result", "summary", "problems", "needs_review", "seconds"];
+  const header = ["application_id", "label_file", "brand_name", "result", "summary", "problems", "examine", "seconds"];
   const lines = [header.join(",")];
   for (const item of batch.items) {
     const checks = item.result?.checks || [];
     const describe = (status) => checks.filter((c) => c.status === status).map((c) => `${c.label}: ${c.message}`).join(" | ");
     lines.push([
       item.id, item.name, item.application.brand_name || "",
-      item.result ? { pass: "OK", review: "Needs review", fail: "Problem" }[item.result.overall] : "Not checked",
+      item.result ? { pass: "OK", review: "Examine", fail: "Problem" }[item.result.overall] : "No result",
       item.result ? item.result.headline : item.error || "",
       describe("fail"), describe("review"),
       item.result ? (item.result.elapsed_ms / 1000).toFixed(1) : "",
@@ -605,12 +613,12 @@ function setupBatch(samples) {
   $("#batch-sample").addEventListener("click", async (e) => {
     const button = e.currentTarget;
     button.disabled = true;
-    button.textContent = "Loading samples…";
+    button.textContent = "Wait…";
     const files = await Promise.all(samples.flatMap((s) => s.files).map((f) => fetchFile(f.url, f.name)));
     const csv = await fetchFile("/samples/batch_applications.csv", "batch_applications.csv");
     addBatchFiles(files);
     await loadCSV(csv);
-    button.textContent = "Sample batch loaded";
+    button.textContent = "Sample labels added";
   });
 
   for (const chip of $$(".chip")) {
@@ -633,8 +641,8 @@ async function main() {
   try {
     const config = await (await fetch("/api/config")).json();
     $("#engine-note").textContent = config.vision !== "off"
-      ? ` Reading: local text scanner, plus an AI reader (${config.vision_model}) for hard-to-read labels.`
-      : " Reading: local text scanner (runs on this server; no outside services).";
+      ? ` The text scanner on this server reads the labels. An AI reader (${config.vision_model}) helps with labels that are hard to read.`
+      : " The text scanner on this server reads the labels. It does not use outside services.";
   } catch { /* footer note is optional */ }
 }
 

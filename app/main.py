@@ -58,7 +58,7 @@ app.mount("/samples", StaticFiles(directory=SAMPLES), name="samples")
 async def image_error(request: Request, exc: ImageError):
     return JSONResponse(
         status_code=422,
-        content={"detail": f"{exc} Please upload a JPG, PNG, WEBP or TIFF picture of the label."},
+        content={"detail": f"{exc} Upload a JPG, PNG, WEBP, or TIFF picture of the label."},
     )
 
 
@@ -116,21 +116,21 @@ async def verify(
     try:
         app_data = Application.model_validate(json.loads(application or "{}"))
     except (json.JSONDecodeError, ValidationError) as exc:
-        raise HTTPException(422, "The application details could not be read.") from exc
+        raise HTTPException(422, "The tool cannot read the application data.") from exc
 
     if not images:
-        raise HTTPException(422, "Please add a picture of the label.")
+        raise HTTPException(422, "Add a picture of the label.")
     if len(images) > settings.max_images:
-        raise HTTPException(422, f"Please upload at most {settings.max_images} pictures per application.")
+        raise HTTPException(422, f"Upload no more than {settings.max_images} pictures for each application.")
 
     limit = settings.max_upload_mb * 1024 * 1024
     uploads = []
     for upload in images:
         data = await upload.read(limit + 1)
         if len(data) > limit:
-            raise HTTPException(413, f"“{upload.filename}” is larger than {settings.max_upload_mb} MB.")
+            raise HTTPException(413, f"The file “{upload.filename}” is larger than {settings.max_upload_mb} MB. Use a smaller file.")
         if not data:
-            raise HTTPException(422, f"“{upload.filename}” is empty.")
+            raise HTTPException(422, f"The file “{upload.filename}” is empty.")
         uploads.append(data)
 
     result = await request.app.state.verifier.verify(uploads, app_data)

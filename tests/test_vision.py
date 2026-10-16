@@ -79,8 +79,8 @@ def test_haiku_requests_skip_server_fallbacks():
 @pytest.mark.parametrize(
     "error, phrase",
     [
-        (anthropic.APIConnectionError(request=httpx2.Request("POST", "https://api.anthropic.com")), "could not be reached"),
-        (anthropic.APITimeoutError(request=httpx2.Request("POST", "https://api.anthropic.com")), "too long"),
+        (anthropic.APIConnectionError(request=httpx2.Request("POST", "https://api.anthropic.com")), "connection to the AI reader failed"),
+        (anthropic.APITimeoutError(request=httpx2.Request("POST", "https://api.anthropic.com")), "did not reply in time"),
     ],
 )
 def test_network_errors_become_vision_unavailable(error, phrase):
@@ -135,7 +135,7 @@ def test_ai_outage_falls_back_to_ocr_with_a_notice():
     error = anthropic.APIConnectionError(request=httpx2.Request("POST", "https://api.anthropic.com"))
     v, _ = verifier("always", error=error)
     result = asyncio.run(v.verify([sample_bytes("05_warning_not_bold.png")], app))
-    assert any("could not be reached" in n for n in result.notices)
+    assert any("connection to the AI reader failed" in n for n in result.notices)
     assert result.engines and all(e.startswith("ocr") for e in result.engines)
 
 
@@ -144,7 +144,7 @@ def test_slow_ai_reader_does_not_hold_up_the_answer():
     v, _ = verifier("always", response=reading(), delay=5)
     result = asyncio.run(v.verify([sample_bytes("03_abv_mismatch.png")], OLD_TOM))
     assert result.elapsed_ms < 3000
-    assert any("too long" in n for n in result.notices)
+    assert any("did not reply in time" in n for n in result.notices)
 
 
 @needs_tesseract
@@ -155,4 +155,4 @@ def test_ai_that_auto_corrects_the_warning_is_caught_by_ocr():
     result = asyncio.run(v.verify([sample_bytes("04_warning_title_case.png")], app))
     caps = next(c for c in result.checks if c.field == "warning_caps")
     assert caps.status == Status.REVIEW
-    assert "disagree" in caps.message
+    assert "do not agree" in caps.message

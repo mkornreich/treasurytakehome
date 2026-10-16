@@ -142,12 +142,12 @@ def _compare(found: list[str], confs: list[float] | None = None) -> tuple[list[s
             if op == "equal":
                 for want, got in zip(expected, seen, strict=True):
                     if clean(want).strip(".,:;").lower() == clean(got).strip(".,:;").lower() and clean(want).lower() != clean(got).lower():
-                        minor.append(f"punctuation: expected “{want}”, read “{got}”")
+                        minor.append(f"punctuation “{want}” read as “{got}”")
         elif op == "delete":
             diff.append({"op": "missing", "text": " ".join(expected)})
             if set(_BODY_KEYS[a0:a1]) <= NUMERALS or (a1 - a0 == 1 and len(_BODY_KEYS[a0]) <= 3):
                 # "(1)", or one short word such as "or": OCR drops these at line ends.
-                minor.append(f"could not read “{' '.join(expected)}”")
+                minor.append(f"“{' '.join(expected)}” not read")
             else:
                 major.append(f"missing: “{' '.join(expected)}”")
                 marks.update(f"w{i}" for i in range(a0, a1))
@@ -155,14 +155,14 @@ def _compare(found: list[str], confs: list[float] | None = None) -> tuple[list[s
             text = " ".join(seen)
             diff.append({"op": "extra", "text": text})
             if _is_noise(seen) or _misread([], found_keys[b0:b1], confs[b0:b1]):
-                minor.append(f"stray marks read as “{text}”")
+                minor.append(f"extra marks “{text}”")
             else:
                 major.append(f"extra text: “{text}”")
                 marks.add(f"i{a0}")
         else:  # replace
             diff.append({"op": "changed", "expected": " ".join(expected), "found": " ".join(seen)})
             ratio = fuzz.ratio(joined_expected, joined_seen)
-            message = f"expected “{' '.join(expected)}”, read “{' '.join(seen)}”"
+            message = f"“{' '.join(expected)}” read as “{' '.join(seen)}”"
             close = ratio >= MINOR_WORD_SIMILARITY and abs((a1 - a0) - (b1 - b0)) <= 1
             if close or _misread(_BODY_KEYS[a0:a1], found_keys[b0:b1], confs[b0:b1]):
                 minor.append(message)

@@ -245,7 +245,7 @@ OLD_TOM_LABEL = Label(
 
 SAMPLES = [
     Sample("01_old_tom_bourbon.png", OLD_TOM_APP, OLD_TOM_LABEL,
-           note="Everything matches (the example from the brief)."),
+           note="All data on the label is the same as the application. This is the example from the brief."),
     Sample(
         "02_stones_throw_gin.png",
         application(brand_name="Stone's Throw", class_type="London Dry Gin",
@@ -254,13 +254,13 @@ SAMPLES = [
         Label(brand="STONE'S THROW", class_type="London Dry Gin", alcohol="41.2% ALC/VOL",
               net="1 LITER", bottler="Bottled by Stone's Throw Spirits Co., Portland, Oregon",
               palette=("#e8f0ee", "#14332e", "#2f6f62")),
-        note="Brand in capitals on the label, title case on the application: still a match.",
+        note="The brand on the label is in capital letters. The application uses capital letters only at the start of words.",
     ),
     Sample(
         "03_abv_mismatch.png",
         OLD_TOM_APP | {"brand_name": "OLD TOM DISTILLERY"},
         Label(**{**OLD_TOM_LABEL.__dict__, "alcohol": "40% Alc./Vol. (80 Proof)"}),
-        note="Label says 40%, application says 45%.", expected="fail",
+        note="The label shows 40% alcohol. The application shows 45%.", expected="fail",
     ),
     Sample(
         "04_warning_title_case.png",
@@ -271,7 +271,7 @@ SAMPLES = [
               net="750 mL", bottler="Bottled by Riverbend Distilling, Louisville, Kentucky",
               warning=WARNING.replace("GOVERNMENT WARNING", "Government Warning"),
               palette=("#f3ece6", "#3a1212", "#7d2020")),
-        note="'Government Warning' in title case instead of capitals.", expected="fail",
+        note="The warning heading is “Government Warning”. It is not in capital letters.", expected="fail",
     ),
     Sample(
         "05_warning_not_bold.png",
@@ -280,7 +280,7 @@ SAMPLES = [
         Label(brand="HARBOR LIGHT", class_type="Spiced Rum", alcohol="35% Alc./Vol. (70 Proof)",
               net="750 mL", bottler="Bottled by Harbor Light Rum Co., Key West, Florida",
               header_bold=False, palette=("#eef3f8", "#0f2236", "#245a8a")),
-        note="Heading 'GOVERNMENT WARNING:' printed in regular weight, not bold.", expected="review",
+        note="The heading “GOVERNMENT WARNING:” is not in bold type.", expected="review",
     ),
     Sample(
         "06_warning_reworded.png",
@@ -291,7 +291,7 @@ SAMPLES = [
               warning=WARNING.replace(" because of the risk of birth defects", "")
                              .replace("impairs your ability", "may impair your ability"),
               palette=("#f2f2f2", "#1b1b1b", "#6b6b6b")),
-        note="Warning wording altered (a phrase removed, 'impairs' changed).", expected="fail",
+        note="The warning text is changed. A phrase is removed, and the word “impairs” is different.", expected="fail",
     ),
     Sample(
         "07_imported_wine.png",
@@ -302,7 +302,7 @@ SAMPLES = [
         Label(brand="CHATEAU BELLE RIVE", class_type="Bordeaux Red Wine", alcohol="13.5% Alc./Vol.",
               net="750 ML", bottler="Imported by Vineyard Imports LLC, New York, NY",
               origin="Product of France", palette=("#f7f1f3", "#3b0d1d", "#7a1f3d")),
-        note="Imported wine; 'Château' (accent) on the application vs 'CHATEAU' on the label.",
+        note="Imported wine. The application shows “Château” with an accent. The label shows “CHATEAU”.",
         expected="review",
     ),
     Sample(
@@ -313,10 +313,10 @@ SAMPLES = [
         Label(brand="HOPPY TRAILS", class_type="India Pale Ale", alcohol="6.8% ALC. BY VOL.",
               net="12 FL. OZ.", bottler="Brewed and Canned by Hoppy Trails Brewing Co., Bend, Oregon",
               palette=("#fdf6e3", "#233d1f", "#4f7d2a"), brand_font="condensed-bold"),
-        note="Net contents in fluid ounces on the label, millilitres on the application.",
+        note="The label gives the net contents in fluid ounces. The application gives them in milliliters.",
     ),
     Sample("09_photo_angle_glare.jpg", OLD_TOM_APP, OLD_TOM_LABEL, photo="angle",
-           note="Photo taken at an angle, with glare and uneven lighting."),
+           note="A photograph at an angle, with glare and dark areas."),
     Sample(
         "10_net_contents_mismatch.png",
         application(brand_name="NORTHERN PEAK", class_type="Blended Scotch Whisky",
@@ -326,10 +326,10 @@ SAMPLES = [
         Label(brand="NORTHERN PEAK", class_type="Blended Scotch Whisky", alcohol="43% Alc./Vol.",
               net="700 mL", bottler="Imported by Highland Trade Co., Boston, MA",
               origin="Product of Scotland", palette=("#eef1ea", "#1f2a1a", "#55693d")),
-        note="Label says 700 mL, application says 750 mL.", expected="fail",
+        note="The label shows 700 mL. The application shows 750 mL.", expected="fail",
     ),
     Sample("11_photo_sideways.jpg", OLD_TOM_APP, OLD_TOM_LABEL, photo="sideways",
-           note="Photo uploaded sideways (rotated 90 degrees)."),
+           note="A photograph that is turned 90 degrees."),
     Sample(
         "12_front_label.png",
         application(beverage_type="wine", brand_name="WILLOW BEND", class_type="Pinot Noir",
@@ -339,7 +339,7 @@ SAMPLES = [
               bottler="Produced and Bottled by Willow Bend Cellars, Dundee, Oregon",
               palette=("#f4f1ea", "#2a2140", "#5b4a8a")),
         back="12_back_label.png",
-        note="Two pictures: brand on the front label, warning on the back label.",
+        note="Two pictures. The brand is on the front label, and the warning is on the back label.",
     ),
     Sample(
         "13_side_panel.png",
@@ -350,7 +350,7 @@ SAMPLES = [
               bottler="Brewed and canned by Copper Kettle Brewing, Asheville, North Carolina",
               palette=("#fbf3e6", "#3a2210", "#a4521c")),
         side=True,
-        note="Bottler and warning run vertically up a side strip, as on many cans.",
+        note="The bottler and the warning go up a narrow side panel, as on many cans.",
     ),
 ]
 

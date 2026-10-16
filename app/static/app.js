@@ -213,7 +213,6 @@ async function checkLabel(files, application, { batch = false } = {}) {
 
 // ---------------------------------------------------------------- larger picture
 
-const ZOOM_ICON = '<svg class="zoom-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="10" cy="10" r="6"/><path d="M14.5 14.5L20 20M10 7.5v5M7.5 10h5"/></svg>';
 /** Fit the picture on the screen, or show it at full size (scroll to see all of it). */
 function setFullSize(full) {
   $(".picture-dialog-body").classList.toggle("full-size", full);
@@ -264,20 +263,19 @@ function renderResult(container, result, files) {
   const checks = result.checks;
   const urls = files.map((f) => URL.createObjectURL(f));
   const enlarge = (i) => showLarger(urls[i], files[i].name, $$(".hl", views[i]).map((n) => n.cloneNode(true)));
-  const views = urls.map((url, i) => {
-    const zoom = el("button", { type: "button", class: "img-zoom", title: "Show a larger picture", "aria-label": `Show a larger picture: ${files[i].name}`, onclick: () => enlarge(i) });
-    zoom.innerHTML = ZOOM_ICON;
-    return el("div", { class: "img-wrap", "data-image": i },
-      el("img", { src: url, alt: `Label picture ${i + 1}`, onclick: () => enlarge(i), onerror: (e) => { e.target.alt = "The browser cannot show this type of file."; } }),
+  // The picture is the button that shows it larger (the highlights sit on top and let clicks through).
+  const views = urls.map((url, i) =>
+    el("div", { class: "img-wrap", "data-image": i },
+      el("button", { type: "button", class: "img-open", title: "Show a larger picture", "aria-label": `Show a larger picture: ${files[i].name}`, onclick: () => enlarge(i) },
+        el("img", { src: url, alt: "", onerror: (e) => { e.target.alt = "The browser cannot show this type of file."; } })),
       files.length > 1 ? el("span", { class: "img-tag" }, `Picture ${i + 1}`) : null,
-      zoom,
-    );
-  });
-  const caption = el("figcaption", {}, "Click a result to see where it is on the label.");
+    ));
+  const CAPTION = "Click the picture to see it larger. “Show on the label” marks an item on it.";
+  const caption = el("figcaption", {}, CAPTION);
 
   const show = (check) => {
     $$(".hl", container).forEach((n) => n.remove());
-    if (!check) { caption.textContent = "Click a result to see where it is on the label."; return; }
+    if (!check) { caption.textContent = CAPTION; return; }
     for (const box of check.boxes) {
       const pad = 0.004;
       views[box.image]?.append(el("div", {
@@ -289,7 +287,7 @@ function renderResult(container, result, files) {
       }));
     }
     caption.textContent = check.boxes.length
-      ? `Highlighted: ${check.label}.`
+      ? `Highlighted: ${check.label}. Click the picture to see it larger.`
       : `${check.label}: the tool cannot show a location. The text is not on the picture, or the AI reader read it.`;
   };
 

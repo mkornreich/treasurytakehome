@@ -154,7 +154,8 @@ input:focus, select:focus { border-color: var(--accent); outline: 3px solid var(
 .thumb-name { display: block; font-size: 1rem; font-weight: 600; line-height: 1.3; color: var(--ink); overflow-wrap: anywhere; margin-top: 6px; }
 .thumb-remove { position: absolute; top: -10px; right: -10px; width: 34px; height: 34px; border-radius: 50%; border: 2px solid #fff; background: var(--ink); color: #fff; font-size: 0.9rem; cursor: pointer; }
 .thumb-add { width: 190px; min-height: 220px; border: 2px dashed var(--line); border-radius: 10px; background: transparent; color: var(--accent-dark); font: inherit; font-weight: 600; cursor: pointer; }
-.zoom-icon { position: absolute; right: 6px; bottom: 6px; width: 34px; height: 34px; padding: 6px; border-radius: 50%; background: var(--ink); fill: none; stroke: #fff; stroke-width: 2.2; stroke-linecap: round; pointer-events: none; }
+.thumbs-hint { display: none; margin: 12px 0 0; color: var(--ink-soft); font-size: 0.95rem; }
+.dropzone.has-files .thumbs-hint { display: block; }
 
 /* ---------- larger picture ---------- */
 .picture-dialog { padding: 0; border: 0; border-radius: var(--radius); max-width: min(96vw, 1400px); max-height: 94vh; box-shadow: 0 10px 40px rgb(0 0 0 / 35%); color: var(--ink); }
@@ -168,9 +169,8 @@ input:focus, select:focus { border-color: var(--accent); outline: 3px solid var(
 .picture-dialog-body .img-wrap img { display: block; width: auto; max-width: 100%; max-height: calc(94vh - 120px); }
 .picture-dialog-body.full-size .img-wrap { cursor: zoom-out; }
 .picture-dialog-body.full-size .img-wrap img { max-width: none; max-height: none; }
-.img-zoom { position: absolute; right: 8px; bottom: 8px; padding: 0; border: 0; background: none; border-radius: 50%; cursor: zoom-in; line-height: 0; }
-.img-zoom .zoom-icon { position: static; width: 40px; height: 40px; padding: 8px; }
-.label-view .img-wrap img { cursor: zoom-in; }
+.img-open { display: block; width: 100%; padding: 0; border: 0; background: none; border-radius: 6px; cursor: zoom-in; line-height: 0; }
+.img-open:hover img { outline: 2px solid var(--accent); }
 
 /* ---------- results ---------- */
 .error-banner { background: var(--fail-bg); border: 2px solid var(--fail-line); color: var(--fail); padding: 14px 18px; border-radius: var(--radius); font-weight: 600; }

@@ -78,7 +78,7 @@ uv run python eval/run_browser_eval.py --compare eval/results/after.json
 
 1. **Add the label picture.** Drag it in or press *Choose picture…*. If the warning is on the back label, add the back picture too: all pictures for one application are read together.
 2. **Type what the application says.** Leave a box empty to skip that check. The government warning is always checked.
-3. **Press *Check label*.** The verdict comes first ("All 8 checks are OK", "1 problem found", "2 items to examine"). Below it is one card per check, and the label with the selected item highlighted. *Show on the label* on a card highlights that item; the magnifier button, or a click on any picture, shows it larger.
+3. **Press *Check label*.** The verdict comes first ("All 8 checks are OK", "1 problem found", "2 items to examine"). Below it is one card per check, and the label with the selected item highlighted. *Show on the label* on a card highlights that item; a click on any picture shows it larger.
 
 | Result | Meaning |
 |---|---|

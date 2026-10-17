@@ -17,7 +17,9 @@ def client():
 
 def test_index_and_config(client):
     assert "Label Check" in client.get("/").text
-    assert client.get("/api/config").json()["vision"] == "off"
+    config = client.get("/api/config").json()
+    assert config["vision"] == "off"
+    assert config["ocr_workers"] >= 1  # a batch sends the pictures of this many labels at a time
 
 
 def test_page_links_its_own_css_and_js_by_content(client):

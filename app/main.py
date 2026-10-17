@@ -8,6 +8,7 @@ duration of one request.
 
 from __future__ import annotations
 
+import asyncio
 import csv
 import hashlib
 import json
@@ -21,6 +22,7 @@ from fastapi import FastAPI, File, Form, HTTPException, Request, UploadFile
 from fastapi.responses import HTMLResponse, JSONResponse, PlainTextResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import ValidationError
+from starlette.datastructures import MutableHeaders
 
 from app.config import Settings
 from app.extraction.ocr import tesseract_available
@@ -56,19 +58,35 @@ app.mount("/static", StaticFiles(directory=STATIC), name="static")
 app.mount("/samples", StaticFiles(directory=SAMPLES), name="samples")
 
 
-@app.middleware("http")
-async def cache_static_files(request: Request, call_next):
+class CacheStaticFiles:
     """The browser text scanner (~6 MB) lives in a versioned folder: let browsers keep it.
     The page's own files must be checked on every load, or a browser can mix an old
-    stylesheet with new code after an update."""
-    response = await call_next(request)
-    path = request.url.path
-    if path.startswith("/static/vendor/"):
-        if response.status_code in (200, 304):  # browsers copy the headers of a 304 into their cache
-            response.headers["Cache-Control"] = "public, max-age=31536000, immutable"
-    elif path.startswith("/static/"):
-        response.headers["Cache-Control"] = "no-cache"
-    return response
+    stylesheet with new code after an update.
+
+    A plain ASGI middleware, not @app.middleware("http"): Starlette's BaseHTTPMiddleware
+    hides the client's disconnect from request.is_disconnected(), which /api/verify uses."""
+
+    def __init__(self, app):
+        self.app = app
+
+    async def __call__(self, scope, receive, send):
+        path = scope.get("path", "") if scope["type"] == "http" else ""
+        if not path.startswith("/static/"):
+            return await self.app(scope, receive, send)
+
+        async def send_with_cache_rules(message):
+            if message["type"] == "http.response.start":
+                headers = MutableHeaders(scope=message)
+                if not path.startswith("/static/vendor/"):
+                    headers["Cache-Control"] = "no-cache"
+                elif message["status"] in (200, 304):  # browsers copy the headers of a 304 into their cache
+                    headers["Cache-Control"] = "public, max-age=31536000, immutable"
+            await send(message)
+
+        await self.app(scope, receive, send_with_cache_rules)
+
+
+app.add_middleware(CacheStaticFiles)
 
 
 @app.exception_handler(ImageError)
@@ -117,6 +135,7 @@ async def config(request: Request):
         "max_images": settings.max_images,
         "max_upload_mb": settings.max_upload_mb,
         "browser_ocr": settings.browser_ocr,
+        "ocr_workers": settings.ocr_workers,  # a batch sends this many labels' pictures at a time
     }
 
 
@@ -135,6 +154,29 @@ async def samples():
             "application": {k: row.get(k, "") for k in Application.model_fields},
         })
     return samples
+
+
+@asynccontextmanager
+async def client_watch(request: Request):
+    """Gives a function that tells whether the client closed the connection.
+
+    The page cancels its request when the browser confirms every item first. A task
+    waits for the disconnect message; request.is_disconnected() only looks for one
+    that has already arrived, and the server does not read the closed connection
+    until something waits for it.
+    """
+    gone = asyncio.Event()
+
+    async def listen():
+        while (await request.receive())["type"] != "http.disconnect":
+            pass
+        gone.set()
+
+    task = asyncio.create_task(listen())
+    try:
+        yield gone.is_set
+    finally:
+        task.cancel()
 
 
 @app.post("/api/verify", response_model=VerificationResult)
@@ -164,7 +206,8 @@ async def verify(
             raise HTTPException(422, f"The file “{upload.filename}” is empty.")
         uploads.append(data)
 
-    result = await request.app.state.verifier.verify(uploads, app_data)
+    async with client_watch(request) as client_gone:
+        result = await request.app.state.verifier.verify(uploads, app_data, cancelled=client_gone)
     log.info("verified %d image(s): %s in %d ms via %s", len(uploads), result.overall.value, result.elapsed_ms, ",".join(result.engines))
     return result
 

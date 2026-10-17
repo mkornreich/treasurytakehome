@@ -13,6 +13,7 @@ from __future__ import annotations
 
 import asyncio
 import logging
+from collections.abc import Callable
 from concurrent.futures import ThreadPoolExecutor
 from statistics import median
 from time import perf_counter
@@ -177,8 +178,13 @@ class Verifier:
             timings_ms={"browser_ocr": readings.ocr_ms, "rules": round(rules_s * 1000)},
         )
 
-    async def verify(self, uploads: list[bytes], app: Application) -> VerificationResult:
-        """Raises imaging.ImageError if an upload is not a readable picture."""
+    async def verify(self, uploads: list[bytes], app: Application,
+                     cancelled: Callable[[], bool] | None = None) -> VerificationResult:
+        """Raises imaging.ImageError if an upload is not a readable picture.
+
+        `cancelled` is asked after each round: when the page stops waiting (the browser
+        confirmed every item first), no more passes start, so other agents' labels are not delayed.
+        """
         started = perf_counter()
         loop = asyncio.get_running_loop()
         run = lambda fn, *args: loop.run_in_executor(self.pool, fn, *args)
@@ -198,6 +204,7 @@ class Verifier:
         readers = [ImageReader(rgb, gray, i) for i, (rgb, gray) in enumerate(zip(rgbs, grays, strict=True))]
         deadline = started + self.settings.ocr_budget_s
         checks: list[CheckResult] | None = None
+        stopped = False
         ocr_started = perf_counter()
         while pending := [r for r in readers if r.has_more]:
             # Straightening passes always run: without them a sideways photo yields no reading at all.
@@ -209,6 +216,10 @@ class Verifier:
             checks = verify(app, evidences)
             if _all_pass(checks):
                 break
+            if cancelled is not None and cancelled():
+                log.info("the page stopped waiting; no more passes")
+                stopped = True
+                break
             if any(c.field.startswith("warning") and c.status != Status.PASS for c in checks):
                 for reader in readers:
                     reader.queue_warning_reread()
@@ -219,7 +230,7 @@ class Verifier:
         engines = sorted({e.name for e in evidences})
 
         if vision_task is not None:
-            if _all_pass(checks) and self.settings.vision_mode != "always":
+            if stopped or _all_pass(checks) and self.settings.vision_mode != "always":
                 vision_task.cancel()
             else:
                 remaining = vision_started + self.settings.vision_timeout_s - perf_counter()

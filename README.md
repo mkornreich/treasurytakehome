@@ -4,7 +4,7 @@ Label Check compares a picture of an alcohol beverage label with what the applic
 
 **Deployed prototype:** <https://labelcheck.mkornreich.me> (also at <https://label-check-fz5a.onrender.com>)
 
-- **Fast.** The agent's browser reads the label first, so a clean label or a sideways photo comes back in about 0.5 s however slow the server is. Labels that need a closer look are read again on the server: on one CPU core, 1–2 s for angled or glary photos, and 3.1 s median and 3.8 s at worst for real approved labels from the TTB registry ([details](#where-the-work-is-done-browser-and-server)).
+- **Fast.** The agent's browser reads the label first, so a clean label or a sideways photo comes back in about 0.5 s however slow the server is. Labels that need a closer look are read again on the server, while the browser continues to read them too; the first to confirm every item gives the answer. A glary photo comes back in about 1.5 s even when the server is as slow as the deployed instance. Real approved labels from the TTB registry take 3.1 s median and 3.8 s at worst on one server CPU core ([details](#where-the-work-is-done-browser-and-server)).
 - **Tested on real labels.** On 21 approved labels from TTB's Public COLA Registry, it raised **no false rejections** and **missed nothing**, including every deliberately tampered value. 78% of checks were confirmed automatically; the rest were honestly marked "Examine". The browser-only path does as well (80%, also with no false rejections and nothing missed). See [eval/REPORT.md](eval/REPORT.md).
 - **Works behind the firewall, and without the server.** Reading is done by Tesseract OCR: in the browser (tesseract.js, served by this app) and on the server. The page loads nothing from outside sites. If the server does not answer, or the page is served as plain static files, the browser does the whole check, with the same rules, tested to give the same answers. An optional AI reader (Claude vision) can help with hard photos when the network allows it, but the app never depends on it.
 - **Judgment, not just string matching.** "STONE'S THROW" matches "Stone's Throw". "750 mL" matches "75 cl", and "12 FL. OZ." matches "355 mL". A missing accent or a near-miss is sent to a person, not rejected.
@@ -50,7 +50,7 @@ uv run uvicorn app.main:app --port 8000
 uv run pytest
 ```
 
-There are 101 tests: unit tests for parsing and rules, regression tests for every failure found on real labels, the AI reader against a fake client, the HTTP API, end-to-end runs over every sample label with real OCR (each must finish in under 5 seconds), and parity tests that run the browser's JavaScript rules and image measurements against the Python ones. The parity tests need [Node.js](https://nodejs.org/) 18 or later and are skipped without it.
+There are 103 tests: unit tests for parsing and rules, regression tests for every failure found on real labels, the AI reader against a fake client, the HTTP API, end-to-end runs over every sample label with real OCR (each must finish in under 5 seconds), and parity tests that run the browser's JavaScript rules and image measurements against the Python ones. The parity tests need [Node.js](https://nodejs.org/) 18 or later and are skipped without it.
 
 ### Run the evaluation on real labels
 
@@ -94,7 +94,7 @@ uv run python eval/run_browser_eval.py --compare eval/results/after.json
    | column | example |
    |---|---|
    | `label_file` (required) | `old_tom.jpg`, or `front.jpg;back.jpg` for several pictures |
-   | `beverage_type` | `spirits`, `wine` or `beer` |
+   | `beverage_type` | `spirits`, `wine` or `beer` (also `distilled spirits` or `malt beverage`; a row with another type is reported, not checked) |
    | `brand_name` | `OLD TOM DISTILLERY` |
    | `class_type` | `Kentucky Straight Bourbon Whiskey` |
    | `alcohol_content` | `45% Alc./Vol. (90 Proof)` |
@@ -104,7 +104,7 @@ uv run python eval/run_browser_eval.py --compare eval/results/after.json
    | `application_id` (optional) | carried through to the results CSV |
 
    Common alternative headers (`brand`, `abv`, `filename`, …) and semicolon-separated files from European Excel are accepted. Without a spreadsheet, each picture is still checked for the warning, alcohol content and net contents.
-3. Press *Check N labels*. Four labels are checked at a time (when the browser does all the work, one per browser worker, up to three), with progress and a time-left estimate. Filter to *Problems* or *Examine*, open any row for the full result, and use *Download results (CSV)* for the record.
+3. Press *Check N labels*. Four labels are checked at a time (when the browser does all the work, one per browser worker, up to three), with progress and a time-left estimate. The server reads the pictures of only one label at a time for each of its CPUs, so a label gets the same passes, and the same result, as when it is checked alone. While a label waits for its turn, the browser reads it, and a label that the browser confirms does not need the server. Filter to *Problems* or *Examine*, open any row for the full result, and use *Download results (CSV)* for the record.
 
 ---
 
@@ -159,14 +159,16 @@ The same Tesseract engine and English model run in two places: natively on the s
                         ┌── all OK ──► answer (only words and positions were sent; the picture stayed in the browser)
  browser reads once ──► server rules ┤
  (upright if sideways)  /api/verify-readings
-                        └── else ────► server reads the pictures again with every pass (/api/verify) ──► answer
+                        └── else ──┬─► server reads the pictures again with every pass (/api/verify) ──► answer
+                                   └─► at the same time, the browser runs its other passes:
+                                       all OK first? ──► answer (the server request is cancelled)
 
  server does not answer, or plain static files ──► browser runs every pass and the rules itself ──► answer
 ```
 
 | Situation | What happens |
 |---|---|
-| Normal | The browser reads each picture once, turned upright first if it is sideways. It sends the words, their positions and the measured heading weight to `POST /api/verify-readings`, and the server applies the rules. If every check is OK, that is the answer. Otherwise the page sends the pictures to `POST /api/verify`, and the server reads them again with all of its passes. |
+| Normal | The browser reads each picture once, turned upright first if it is sideways. It sends the words, their positions and the measured heading weight to `POST /api/verify-readings`, and the server applies the rules. If every check is OK, that is the answer. Otherwise the page sends the pictures to `POST /api/verify`, and the server reads them again with all of its passes. While the server works, the browser runs its own remaining passes on the same pictures. If the browser confirms every item first, that is the answer, and the page cancels the server request; the server then starts no more passes. If not, the server's answer is used. On a slow server this is what keeps a glary photo under 5 seconds. In a batch the browser runs every pass it has while the label waits for its turn on the server. |
 | The server does not answer, or the page is plain static files | The browser does everything: the same rounds of passes (straightened, glare channel, layout, rotations, binarized, a second look at the warning), the same 3.5 s budget, and the same rules. The result says "The server did not answer. The browser examined the label." The page tries the server again after a minute. |
 | The browser cannot run it (no WebAssembly SIMD, or the files are blocked) | The page sends the pictures to the server, as before. |
 
@@ -176,11 +178,14 @@ The same Tesseract engine and English model run in two places: natively on the s
 
 | | Clean labels, sideways and side-panel photos | Glare photo | Labels with problems |
 |---|---|---|---|
-| Normal (browser reads, server decides) | 0.4–0.7 s | 1.7 s (read again on the server) | 2.4–3.5 s (read again on the server) |
+| Normal (browser reads, server decides) | 0.4–0.6 s | 1.5 s (the browser confirmed it first) | 2.6–3.7 s (read again on the server) |
+| Normal, with a slow server (limited to a quarter of one core) | 0.4–0.6 s | 1.4–1.5 s (the browser confirmed it first) | 2.8–3.8 s (read again on the server) |
 | Browser only | 0.4–0.6 s | 1.6 s | 2.6–3.6 s |
-| Server only, on the deployed half-CPU instance | 1.3–5.4 s | 4.8 s | 2.8–3.9 s |
+| Server only, on the deployed half-CPU instance | 1.3–5.4 s | 4.8–5.2 s | 2.8–3.9 s |
 
-Every result was the same in all three. A browser-only batch of all 13 samples took 16 s, again with identical results. In a batch nobody waits for one label, so the browser runs every pass a label needs instead of stopping at 3.5 s.
+Every result was the same in all of them (on the slow server, with 2.5 s between labels; see [the limitations](#limitations-and-trade-offs) for labels sent closer together). A browser-only batch of all 13 samples took 16 s, again with identical results. In a batch nobody waits for one label, so the browser runs every pass a label needs instead of stopping at 3.5 s.
+
+The slow-server row stands in for the deployed instance: the two servers take about equally long to read the glare photo (5.1–5.2 s on the deployed instance, 5.4 s on the slow server). Before the browser ran its passes during the server's read, the glare photo took 6.2–6.3 s on the deployed site, over the 5-second target. A batch of the 13 samples took 18–20 s on the slow server, with the same results as when each label is checked alone. Before the server read one label at a time, a batch on the deployed site sent it four labels at once: each label got about one pass, and the four labels with problems came back as *Examine*.
 
 ---
 
@@ -309,6 +314,7 @@ Regenerate them with `uv run python samples/generate_labels.py`. Real photos and
 - **Caution costs a little on clear-cut mismatches.** A conflicting value read only once becomes *Examine* rather than *Problem*. In the tampered-label test, 6 of 21 changed alcohol values were flagged as *Examine* instead of *Problem*; none were missed.
 - **Bold detection is a measurement, not a certainty.** On its own it can only flag "not bold" for review. Both readers must agree before it becomes a Problem. A heading in a much larger font than the body can look bold to the measurement even if it isn't.
 - **Not checked:** minimum type size (1/2/3 mm by container size; a photo has no physical scale), placement, contrast, and "separate and apart" rules. Also not checked: beverage-specific statements such as sulfites, appellation, vintage, age statements, colour additives and "table wine" alternatives, and whether a mention is in the brand position rather than elsewhere on the label.
+- **A cancelled server read completes its current pass.** When the browser answers first, the server stops after the pass that is in progress: up to about 1.5 s more on a half CPU. A label that comes in during that time waits, and on a slow server it can get one pass fewer. In a test with labels sent 0.8 s apart, a wrong net contents came back as *Examine* instead of *Problem*. With 2.5 s between labels, as when a person selects the next one, the results did not change.
 - **Batch runs in the browser.** Closing the tab stops it. That is a deliberate trade for a stateless server with nothing stored; a production version would add a job queue with retention rules.
 - **No sign-in or audit trail.** It's a prototype. Production would sit behind the agency's identity provider and log decisions, not content.
 - **English labels only** (the Tesseract `eng` model).
@@ -323,7 +329,7 @@ Regenerate them with `uv run python samples/generate_labels.py`. Real photos and
 
 The app is one stateless container, so any container host works. 1 vCPU / 1 GB RAM is enough: each label takes ≤1.5 s on one CPU. More CPUs speed up batches. Because the browser reads first, clean labels and sideways photos do not depend on the server's speed.
 
-- **Render:** *New → Blueprint →* select this repository ([`render.yaml`](render.yaml) is included). It uses Render's default 0.5 CPU / 512 MB instance. Measured there on the sample labels (October 2026), from upload to answer: about 1.3 s for a clean label, 3–4 s for a label with problems (the tool reads it more times before it reports), and 4.8–5.4 s for an angled or sideways photo. That is at the edge of the 5-second target. A 1 CPU instance is about twice as fast, and the free instance is too slow. To enable the AI reader, add `ANTHROPIC_API_KEY` under the service's *Environment* settings.
+- **Render:** *New → Blueprint →* select this repository ([`render.yaml`](render.yaml) is included). It uses Render's default 0.5 CPU / 512 MB instance. Measured there on the sample labels (October 2026), from upload to answer: about 1.3 s for a clean label, 3–4 s for a label with problems (the tool reads it more times before it reports), and 4.8–5.4 s for an angled or sideways photo when the server reads it alone. That is at the edge of the 5-second target. In normal use the agent's browser answers for those photos first (under 1 s for a sideways photo, about 1.5 s for the glare photo), so the page stays inside the target. A 1 CPU instance is about twice as fast, and the free instance is too slow. To enable the AI reader, add `ANTHROPIC_API_KEY` under the service's *Environment* settings.
 - **Azure Container Apps** (matches the agency's Azure environment):
 
   ```bash

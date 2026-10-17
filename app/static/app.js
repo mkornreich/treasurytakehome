@@ -103,10 +103,10 @@ async function prepareImage(file) {
 /** The server did not answer, or has no API (a static copy of the page): the browser can do the work. */
 class ServerUnavailable extends Error {}
 
-async function post(url, body) {
+async function post(url, body, signal) {
   let response;
   try {
-    response = await fetch(url, { method: "POST", body, headers: typeof body === "string" ? { "Content-Type": "application/json" } : {} });
+    response = await fetch(url, { method: "POST", body, signal, headers: typeof body === "string" ? { "Content-Type": "application/json" } : {} });
   } catch {
     throw new ServerUnavailable(`${NO_CONNECTION} Make sure that your network connection operates. Then try again.`);
   }
@@ -122,11 +122,66 @@ async function post(url, body) {
   return response.json();
 }
 
-function postVerify(files, application) {
+// A batch sends the server the pictures of only as many labels at a time as it has OCR workers.
+// More at once would only share their time, and each label would get fewer passes in its 3.5 s.
+const serverTurns = { free: null, waiting: [] };
+
+async function inServerTurn(work, signal) {
+  serverTurns.free ??= server.config.ocr_workers || 1;
+  if (serverTurns.free > 0) serverTurns.free--;
+  else {
+    await new Promise((resolve, reject) => {
+      const turn = () => { signal?.removeEventListener("abort", cancel); resolve(); };
+      const cancel = () => {
+        const i = serverTurns.waiting.indexOf(turn);
+        if (i >= 0) serverTurns.waiting.splice(i, 1);
+        reject(new ServerUnavailable("The request to the server was cancelled."));
+      };
+      serverTurns.waiting.push(turn);
+      signal?.addEventListener("abort", cancel, { once: true });
+    });
+  }
+  try {
+    return await work();
+  } finally {
+    const next = serverTurns.waiting.shift();
+    if (next) next();
+    else serverTurns.free++;
+  }
+}
+
+function postVerify(files, application, { signal, batch = false } = {}) {
   const form = new FormData();
   for (const f of files) form.append("images", f, f.name);
   form.append("application", JSON.stringify(application));
-  return post("/api/verify", form);
+  const send = () => post("/api/verify", form, signal);
+  return batch ? inServerTurn(send, signal) : send();
+}
+
+/**
+ * The server reads the pictures again while the browser continues with its own passes (`finishing`).
+ * If the browser confirms every item first, its answer is used and the server request is cancelled:
+ * on a slow server, a hard photo that the browser can confirm comes back in seconds less, and in a
+ * batch that label does not wait for a turn on the server.
+ * Otherwise the server's answer is used. If the server does not answer, `finishing` continues.
+ */
+async function serverOrBrowser(session, finishing, files, application, batch) {
+  const controller = new AbortController();
+  const fromServer = postVerify(files, application, { signal: controller.signal, batch });
+  const browserPass = finishing.then((r) => (r.overall === "pass" ? r : null), () => null);
+  const first = await Promise.race([fromServer.then(() => null, () => null), browserPass]);
+  if (first) {
+    controller.abort();
+    return [first, "browser"];
+  }
+  try {
+    const answer = await fromServer;
+    session.stop();
+    return [answer, "server"];
+  } catch (err) {
+    if (!(err instanceof ServerUnavailable)) session.stop();
+    throw err;
+  }
 }
 
 // ---------------------------------------------------------------- where the work is done
@@ -151,7 +206,8 @@ function warmUpScanner() {
 
 /**
  * Check one application. The browser reads the pictures first and the server applies the rules.
- * If that does not confirm every item, the server reads the pictures again with more effort.
+ * If that does not confirm every item, the server reads the pictures again with more effort
+ * (the browser continues at the same time; see serverOrBrowser).
  * If the server does not answer, the browser does all of the work.
  */
 async function checkLabel(files, application, { batch = false } = {}) {
@@ -160,6 +216,7 @@ async function checkLabel(files, application, { batch = false } = {}) {
   const engine = await browserScanner();
   const useServer = serverUsable();
   let session = null;
+  let finishing = null; // the rest of the browser's passes, while the server reads the pictures again
   let result = null;
   let where = "server";
   let notice = null;
@@ -178,8 +235,12 @@ async function checkLabel(files, application, { batch = false } = {}) {
       if (session) {
         const answer = await post("/api/verify-readings", JSON.stringify({ application, ...session.readings() }));
         if (answer.overall === "pass") [result, where] = [answer, "browser"];
+        else {
+          finishing = session.finish(application, batch ? { budgetMs: Infinity } : {});
+          [result, where] = await serverOrBrowser(session, finishing, prepared, application, batch);
+        }
       }
-      result ??= await postVerify(prepared, application);
+      result ??= await postVerify(prepared, application, { batch });
       server.up = true;
     } catch (err) {
       if (!(err instanceof ServerUnavailable) || !engine) throw err;
@@ -202,7 +263,7 @@ async function checkLabel(files, application, { batch = false } = {}) {
         throw new Error("The browser cannot open this picture. Use a JPG, PNG, or WEBP picture of the label.");
       }
     }
-    result = await session.finish(application, batch ? { budgetMs: Infinity } : {});
+    result = await (finishing ?? session.finish(application, batch ? { budgetMs: Infinity } : {}));
     where = "browser";
     if (notice) result.notices.unshift(notice);
   }
@@ -510,6 +571,11 @@ const HEADER_ALIASES = {
   application_id: ["application_id", "id", "ttb_id", "cola_id", "serial_number"],
   notes: ["notes", "note", "comments"],
 };
+// The types of product that the server knows (app/models.py), with the other names it accepts.
+const BEVERAGE_TYPES = {
+  "": "spirits", spirits: "spirits", spirit: "spirits", "distilled spirits": "spirits", liquor: "spirits",
+  wine: "wine", beer: "beer", "malt beverage": "beer", malt: "beer", ale: "beer",
+};
 const HEADER_LOOKUP = Object.fromEntries(Object.entries(HEADER_ALIASES).flatMap(([key, names]) => names.map((n) => [n, key])));
 
 function parseCSV(text) {
@@ -579,6 +645,7 @@ function planBatch() {
   const items = [];
   const used = new Set();
   const missing = [];
+  const unknownTypes = [];
   if (batch.csv) {
     const separator = batch.csv.delimiter === ";" ? /[|]/ : /[;|]/;
     batch.csv.rows.forEach((row, n) => {
@@ -588,11 +655,17 @@ function planBatch() {
       const notFound = names.filter((name) => !batch.files.has(baseName(name)));
       if (notFound.length) missing.push(`Row ${n + 2}: ${notFound.join(", ")}`);
       const application = Object.fromEntries(FIELDS.map((f) => [f, row[f] || ""]));
-      application.beverage_type = (row.beverage_type || "spirits").toLowerCase();
+      const type = (row.beverage_type || "").trim().toLowerCase();
+      application.beverage_type = BEVERAGE_TYPES[type] ?? type;
+      let error = "";
+      if (!files.length) error = notFound.length ? `These pictures were not added: ${notFound.join(", ")}.` : "The label_file box is empty.";
+      else if (!(type in BEVERAGE_TYPES)) {
+        error = `The tool does not know the type of product “${row.beverage_type.trim()}”. Write spirits, wine, or beer.`;
+        unknownTypes.push(`Row ${n + 2}: ${error}`);
+      }
       items.push({
         name: names.join(" + ") || `Row ${n + 2}`, id: row.application_id || "", files, application, notFound,
-        status: files.length ? "queued" : "error",
-        error: files.length ? "" : (notFound.length ? `These pictures were not added: ${notFound.join(", ")}.` : "The label_file box is empty."),
+        status: error ? "error" : "queued", error,
       });
     });
   }
@@ -607,6 +680,7 @@ function planBatch() {
   plan.hidden = items.length === 0;
   const parts = [`${plural(runnable, "label")} ${runnable === 1 ? "is" : "are"} ready.`];
   if (batch.csv && extras.length) parts.push(`${plural(extras.length, "picture")} ${extras.length === 1 ? "is" : "are"} not in the spreadsheet. For these, the tool examines only the warning, the alcohol content, and the net contents.`);
+  parts.push(...unknownTypes);
   if (!batch.csv && runnable) parts.push("If there is no spreadsheet, the tool examines only the government warning, the alcohol content, and the net contents.");
   $("#batch-summary").textContent = parts.join(" ");
   const details = $("#batch-unmatched");

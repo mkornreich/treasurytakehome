@@ -60,3 +60,15 @@ def test_front_and_back_images_are_combined(verifier, sample_rows):
     assert both.overall == Status.PASS, [(c.field, c.message) for c in both.checks]
     boxes = {c.field: {b.image for b in c.boxes} for c in both.checks}
     assert boxes["brand_name"] == {0} and boxes["warning_text"] == {1}
+
+
+def test_no_more_passes_after_the_page_stops_waiting(verifier, sample_rows):
+    """The page cancels its request when the browser confirmed every item first: the
+    server must not keep a CPU busy for an answer nobody reads."""
+    row = sample_rows["03_abv_mismatch.png"]
+    app = Application(**{k: v for k, v in row.items() if k in Application.model_fields})
+    full = asyncio.run(verifier.verify([sample_bytes("03_abv_mismatch.png")], app))
+    assert len(full.engines) > 1  # a label with a problem gets more than one pass
+
+    stopped = asyncio.run(verifier.verify([sample_bytes("03_abv_mismatch.png")], app, cancelled=lambda: True))
+    assert stopped.engines == ["ocr:standard"]

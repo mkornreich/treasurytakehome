@@ -6,6 +6,7 @@
 //   await session.firstRound();       // one plain reading per picture (turned upright if sideways)
 //   session.readings();               // what /api/verify-readings takes: words, places, heading weight
 //   await session.finish(application) // the whole check in the browser, with the rules in rules.js
+//   session.stop();                   // start no more passes (the server answered first)
 
 import Tesseract from "../vendor/tesseract-7.0.0/tesseract.esm.min.js";
 import {
@@ -297,9 +298,13 @@ export class Session {
     this.started = performance.now();
     this.readers = null;
     this.notices = [];
+    this.stopped = false;
   }
 
   get evidences() { return this.readers.flatMap((r) => r.evidences); }
+
+  /** Start no more passes: the server answered first. The pass in progress completes. */
+  stop() { this.stopped = true; }
 
   /** Decode the pictures and read each one once (turned upright first when it is sideways). */
   async firstRound() {
@@ -345,7 +350,7 @@ export class Session {
     };
     const check = () => timed(() => verify(application, this.evidences));
     let checks = check();
-    while (!allPass(checks)) {
+    while (!allPass(checks) && !this.stopped) {
       if (checks.some((c) => c.field.startsWith("warning") && c.status !== PASS)) timed(() => this.readers.forEach((r) => r.queueWarningReread()));
       const pending = this.readers.filter((r) => r.hasMore);
       if (!pending.length) break;

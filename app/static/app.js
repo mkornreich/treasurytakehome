@@ -394,7 +394,7 @@ function renderResult(container, result, files) {
   container.replaceChildren(...[
     el("div", { class: `verdict ${result.overall}` },
       el("div", { class: "verdict-icon", "aria-hidden": "true" }, STATUS[result.overall].icon),
-      el("div", {}, heading, el("p", {}, `The ${engineText(result)} examined the label in ${seconds} seconds. The agent makes the final decision.`), jumps),
+      el("div", {}, heading, el("p", {}, `The ${engineText(result)} examined the label in ${seconds} seconds. A compliance agent makes the final decision.`), jumps),
     ),
     result.notices.length ? el("ul", { class: "notices" }, result.notices.map((n) => el("li", {}, n))) : null,
     el("div", { class: "result-grid" },

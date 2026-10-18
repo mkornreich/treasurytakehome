@@ -299,7 +299,7 @@ Regenerate them with `uv run python samples/generate_labels.py`. Real photos and
 - The tool compares the **label against the application**, not against lab analysis. Values must therefore match exactly (45 % ≠ 45.5 %); the TTB tolerances for actual alcohol content don't apply.
 - Fields left blank on the application are not checked. Alcohol content and net contents are still reported if found, and a missing alcohol statement is flagged for spirits.
 - The warning text is the statutory one in 27 CFR 16.21. An all-caps body is acceptable; the heading must be capitals and bold.
-- When the tool can't read something, the answer is "Examine", never a silent pass and never an automatic rejection. A compliance agent always makes the final decision.
+- When the tool can't read something, the answer is "Examine", never a silent pass and never an automatic rejection. A compliance agent must always make the final decision.
 
 ## Limitations and trade-offs
 
